@@ -492,12 +492,12 @@
     }).join("") + "</select></label>";
   }
   function fieldRoast(v) {
-    return '<label class="field">Roast<select id="roast">' + opt("mild", "Mild", v) + opt("chief", "Chief", v) + '</select><span class="fine">Banter spice for host and Chief Hot Wash lines. Not a game mode.</span></label>';
+    return '<label class="field">Roast<select id="roast">' + opt("mild", "Mild", v) + opt("chief", "Chief", v) + '</select><span class="fine">Banter spice after reveals. Mild = light ribbing; Chief = sharper. Study content stays the same; only the host lines change.</span></label>';
   }
   function fieldFlights(v) {
     return '<label class="field">Flights<select id="flights">' + [2, 3, 4].map(function (n) {
       return '<option' + (Number(v) === n ? " selected" : "") + ">" + n + "</option>";
-    }).join("") + '</select><span class="fine">How many teams for Flight vs Flight. Not a game mode.</span></label>';
+    }).join("") + '</select><span class="fine">How many teams share the room (2–4). Captains lock; used by Flight vs Flight. Solo ignores this.</span></label>';
   }
   function modePick(id, extra, label, help) {
     var cls = extra ? "btn " + extra : "btn";
