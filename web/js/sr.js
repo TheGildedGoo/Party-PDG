@@ -27,6 +27,9 @@
   function saveLocal(data) {
     try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { /* quota */ }
     mirrorIdb(data);
+    if (PDG.onProgressSaved) {
+      try { PDG.onProgressSaved(); } catch (e) { /* ignore */ }
+    }
   }
 
   function idb() {

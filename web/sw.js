@@ -1,4 +1,4 @@
-var VERSION = "pdg-party-v7";
+var VERSION = "pdg-party-v8";
 var CORE = [
   "/",
   "/index.html",
@@ -12,6 +12,8 @@ var CORE = [
   "/js/ws.js",
   "/js/sr.js",
   "/js/game.js",
+  "/js/progress-merge.js",
+  "/js/account.js",
   "/js/host.js",
   "/js/player.js",
   "/js/modes/boards.js",
