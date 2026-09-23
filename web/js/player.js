@@ -172,6 +172,25 @@
     saveSession();
     ui.localId = "p" + Math.random().toString(16).slice(2, 8);
     if (link) link.close();
+    if (PDG.usesHostedRelay && PDG.usesHostedRelay() && PDG.lookupRoom) {
+      PDG.lookupRoom(ui.room).then(function (info) {
+        if (info && info.host === false) {
+          ui.error = "No host is waiting on that code.";
+          ui.linked = false;
+          render();
+          return;
+        }
+        openPlayerLink();
+      }).catch(function () {
+        openPlayerLink();
+      });
+      return;
+    }
+    openPlayerLink();
+  }
+
+  function openPlayerLink() {
+    if (link) link.close();
     link = PDG.connect({
       role: ui.audience ? "audience" : "player",
       room: ui.room,
@@ -200,7 +219,9 @@
         error: function (message) { ui.error = message || "Could not join."; ui.linked = false; render(); },
         hostgone: function () { ui.error = "Host closed the room."; ui.linked = false; ui.state = null; render(); },
         offline: function () {
-          var line = "Could not join the host. Use the same Wi-Fi, not a guest network, and allow Python through the firewall.";
+          var line = PDG.usesHostedRelay && PDG.usesHostedRelay()
+            ? "Could not reach the room. Check the code and the network."
+            : "Could not join the host. Use the same Wi-Fi, not a guest network, and allow Python through the firewall.";
           if (ui.error === line && !ui.linked) return;
           ui.linked = false;
           ui.error = line;

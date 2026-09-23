@@ -44,6 +44,10 @@
 
   function localPlay() { return !ui.party; }
 
+  function hostedRelay() {
+    return !!(PDG.usesHostedRelay && PDG.usesHostedRelay());
+  }
+
   function accountName() {
     if (!PDG.account || typeof PDG.account.displayName !== "function") return "";
     return String(PDG.account.displayName() || "").trim().slice(0, 20);
@@ -182,6 +186,11 @@
     } else if (joinInfo && joinInfo.join) {
       next = joinInfo.join + "?room=" + game.room;
       unreachable = joinInfo.reachable === false || joinInfo.ip === "127.0.0.1";
+    } else {
+      next = location.origin + (hostedRelay() ? "/play.html?room=" : "/play?room=") + game.room;
+    }
+    if (location.protocol !== "file:" && !hostedRelay() && next.indexOf("relay=") === -1) {
+      next += "&relay=lan";
     }
     var changed = game.joinUrl !== next || ui.lanUnreachable !== unreachable;
     game.joinUrl = next;
@@ -213,16 +222,9 @@
       joinInfo = info;
       applyJoin();
     }).catch(function () {
-      if (!game.joinUrl) game.joinUrl = location.origin + "/play?room=" + game.room;
       var hostName = location.hostname;
-      var local = hostName === "localhost" || hostName === "127.0.0.1";
-      if (local && !ui.lanUnreachable) {
-        ui.lanUnreachable = true;
-        if (ui.screen === "lobby") {
-          lastKey = "";
-          render();
-        }
-      }
+      if ((hostName === "localhost" || hostName === "127.0.0.1") && !ui.lanUnreachable) ui.lanUnreachable = true;
+      applyJoin();
     });
   }
 
@@ -255,6 +257,18 @@
         error: function (message) {
           ui.error = message || "Room error";
           if (!welcomed && String(message).indexOf("already") !== -1) {
+            if (hostedRelay() && PDG.mintRoom) {
+              PDG.mintRoom().then(function (code) {
+                if (!ui.party) return;
+                game.configureRoom(code);
+                applyJoin();
+                connectHost();
+              }).catch(function () {
+                ui.error = "Room relay is not reachable. Check the network, then try Host a party again.";
+                render();
+              });
+              return;
+            }
             game.configureRoom(PDG.roomCode());
             applyJoin();
             connectHost();
@@ -264,7 +278,9 @@
         },
         offline: function () {
           if (welcomed) return;
-          var line = "Room relay is not reachable. " + COACH;
+          var line = hostedRelay()
+            ? "Room relay is not reachable. Check the network, then try Host a party again."
+            : "Room relay is not reachable. " + COACH;
           if (ui.error === line) return;
           ui.error = line;
           render();
@@ -1122,7 +1138,6 @@
     else if (ui.session && !ui.session.closed) ui.session = null;
     if (ui.mock && !ui.mock.done) ui.mock.pausedAt = Date.now();
     ui.party = true;
-    ui.screen = "lobby";
     ui.notice = "";
     ui.error = "";
     ui.wager = null;
@@ -1130,8 +1145,26 @@
     game.hostLine = "Same Wi-Fi. Phones join with the room code.";
     game.toLobby();
     game.configure(settings);
-    connectHost();
+    if (hostedRelay() && PDG.mintRoom) {
+      PDG.mintRoom().then(function (code) {
+        if (!ui.party) return;
+        ui.screen = "lobby";
+        game.configureRoom(code);
+        applyJoin();
+        refreshJoin();
+        connectHost();
+        render();
+      }).catch(function () {
+        if (!ui.party) return;
+        ui.screen = "lobby";
+        ui.error = "Room relay is not reachable. Check the network, then try Host a party again.";
+        render();
+      });
+      return;
+    }
+    ui.screen = "lobby";
     refreshJoin();
+    connectHost();
     render();
   }
 

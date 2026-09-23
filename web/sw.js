@@ -9,6 +9,7 @@ var CORE = [
   "/js/qrcode.js",
   "/js/logic.js",
   "/js/audio.js",
+  "/js/relay-config.js",
   "/js/ws.js",
   "/js/sr.js",
   "/js/game.js",
