@@ -1,5 +1,5 @@
-import { fail } from "../../lib/http.js";
-import { verifyEmail } from "../../lib/actions/auth.js";
+import { fail } from "../lib/http.js";
+import { verifyEmail } from "../lib/actions/auth.js";
 
 export async function GET(request) {
   try {
