@@ -1,6 +1,7 @@
-/* WebSocket relay client.
-   file:// Quiet Hours stays on BroadcastChannel (same browser only).
-   http(s) reconnects with backoff. BroadcastChannel is not a phone path. */
+/* Party relay client. Call this only when a person hosts a room or a phone taps Join.
+   Solo and Quiet Hours must not call it. file:// party tabs use BroadcastChannel
+   on this computer only. http(s) uses the WebSocket and reconnects with backoff.
+   BroadcastChannel is not a phone path. */
 (function (root) {
   var PDG = root.PDG = root.PDG || {};
 

@@ -1,6 +1,6 @@
 (function () {
   var PDG = window.PDG;
-  var ui = { screen: "attract", error: "", solo: null, mock: null, install: null, lanUnreachable: false };
+  var ui = { screen: "attract", error: "", solo: null, mock: null, install: null, lanUnreachable: false, party: false };
   var joinInfo = null;
   var COACH = "Use the same Wi-Fi, not a guest network, and allow Python through the firewall.";
   var bank = null;
@@ -180,7 +180,7 @@
       '<div class="hazard"></div>' +
       '<header class="topbar">' +
       '<div class="brand">PDG <span>PARTY</span></div>' +
-      '<div class="roompill">ROOM ' + PDG.esc(game.room) + "</div>" +
+      '<div class="roompill">' + (ui.party ? "ROOM " + PDG.esc(game.room) : "SOLO") + "</div>" +
       '<div class="top-actions">' +
       '<button class="icon-btn" id="mute" type="button">' + PDG.esc(muteLabel) + "</button>" +
       '<button class="icon-btn" id="quiet" type="button">' + PDG.esc(quietLabel) + "</button>" +
@@ -192,6 +192,7 @@
   }
 
   function scoreHTML() {
+    if (!ui.party) return '<div class="fine">Solo on this computer. No room code until you host a room.</div>';
     if (!game.players.length) return '<div class="fine">Players show up here.</div>';
     return game.players.filter(function (p) { return p.connected !== false; }).map(function (p) {
       var tag = p.audience ? "Audience" : (p.team != null ? "Flight " + (p.team + 1) : "Player");
@@ -221,6 +222,7 @@
       '<button class="btn" id="solo" type="button">Quiet Hours</button>' +
       '<button class="btn ghost" id="install" type="button">Install</button>' +
       "</div>" +
+      '<p class="fine">Quiet Hours stays on this computer. Phones join only after you host a room.</p>' +
       (ui.error ? '<p class="warn">' + PDG.esc(ui.error) + "</p>" : "");
   }
 
@@ -504,8 +506,20 @@
 
   function bind() {
     var map = {
-      host: function () { ui.screen = "lobby"; game.toLobby(); connectHost(); refreshJoin(); },
-      solo: function () { ui.screen = "solo"; ui.solo = { track: "E5" }; render(); },
+      host: function () {
+        ui.party = true;
+        ui.screen = "lobby";
+        game.toLobby();
+        connectHost();
+        refreshJoin();
+      },
+      solo: function () {
+        ui.party = false;
+        if (link) { link.close(); link = null; }
+        ui.screen = "solo";
+        ui.solo = { track: "E5" };
+        render();
+      },
       about: function () { ui.screen = "about"; render(); },
       back: function () { ui.screen = game.phase === "lobby" ? "lobby" : "attract"; if (ui.screen === "attract") game.phase = "attract"; render(); },
       "back-solo": function () { ui.screen = "solo"; ui.solo = { track: (ui.mock && ui.mock.track) || "E5" }; ui.mock = null; render(); },
