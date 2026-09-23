@@ -1,6 +1,7 @@
 {
   "name": "pdg-play",
   "private": true,
+  "type": "module",
   "description": "Party-PDG static PWA plus Vercel functions for accounts and billing.",
   "scripts": {
     "build": "node -e \"console.log('Party-PDG static client and api routes')\""
