@@ -22,6 +22,29 @@ export function emailError(email) {
   return null;
 }
 
+export function normalizeUsername(raw) {
+  return String(raw || "").trim();
+}
+
+export function usernameError(username) {
+  const value = normalizeUsername(username);
+  if (!/^[A-Za-z0-9_-]{3,20}$/.test(value)) {
+    return "Use 3–20 letters, numbers, underscores, or dashes.";
+  }
+  return null;
+}
+
+/** Case-insensitive clash against rows that are still active. Same id is not a clash. */
+export function usernameConflict(candidate, rows, exceptId) {
+  const key = normalizeUsername(candidate).toLowerCase();
+  if (!key) return false;
+  return (rows || []).some((row) => {
+    if (!row || row.deletedAt || row.deleted_at) return false;
+    if (exceptId && row.id === exceptId) return false;
+    return String(row.username || "").toLowerCase() === key;
+  });
+}
+
 export async function hashPassword(password) {
   const salt = randomBytes(16).toString("hex");
   const buf = await scrypt(password, salt, 64);

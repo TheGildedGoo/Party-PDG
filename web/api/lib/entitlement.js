@@ -30,6 +30,7 @@ export function publicUser(user) {
     subscriptionStatus: user.subscriptionStatus || null,
     trialEndsAt: user.trialEndsAt || null,
     currentPeriodEnd: user.currentPeriodEnd || null,
+    username: user.username || null,
     hasBillingCustomer: !!user.stripeCustomerId,
     entitlement: entitlement(user),
   };
