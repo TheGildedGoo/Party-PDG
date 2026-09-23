@@ -1,44 +1,368 @@
 #!/usr/bin/env python3
 """PDG Party local server. Python 3 standard library only.
 
-Binds 0.0.0.0:8741, serves the web/ folder, and relays WebSocket
-messages. The host browser is authoritative. This process does not
-score rounds or store questions.
+Binds 0.0.0.0, preferring port 8741 and falling through 8750 if that
+port is taken. Serves the web/ folder and relays WebSocket messages.
+The host browser is authoritative. This process does not score rounds
+or store questions.
 """
 from __future__ import annotations
 
+import ctypes
+import ctypes.util
 import hashlib
 import json
 import os
+import re
 import socket
 import struct
+import sys
 import threading
 import webbrowser
 from base64 import b64encode
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 WEB = os.path.join(ROOT, "web")
-PORT = 8741
+PORT_FIRST = 8741
+PORT_LAST = 8750
+# Idle rooms still need traffic or some NATs drop the TCP session.
+PING_EVERY = 20
+HOST_GRACE_SEC = 12
 WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 ROOMS: dict[str, dict] = {}
 ROOMS_LOCK = threading.Lock()
+SEND_LOCKS: dict[int, threading.Lock] = {}
+SEND_LOCKS_GUARD = threading.Lock()
 # socket.socket has no instance dict, so ownership cannot be stored on the conn.
 HANDED: set[int] = set()
+# Set once bind succeeds. /api/info reports this, not the preferred port.
+BOUND_PORT = PORT_FIRST
+
+# Obvious tunnel, VPN, and virtual NIC names. Real Wi-Fi and Ethernet stay.
+_VPN_NAME = re.compile(
+    r"(?:^|[^a-z0-9])(?:tun|tap|wg|ppp|utun|zt|vpn|cni)\d*|"
+    r"tailscale|zerotier|wireguard|nordlynx|wintun|hamachi|teredo|isatap|"
+    r"docker|veth|vmnet|vbox|virbr|flannel|proton|openvpn|anyconnect|"
+    r"tunnel|ipsec|bluetooth|awdl|llw|hyper-?v|vethernet|virtualbox|vmware|"
+    r"mullvad|warp|globalprotect|fortinet",
+    re.IGNORECASE,
+)
+_TUNNEL_TYPES = {23, 131}  # PPP, TUNNEL
+_LOOP_TYPES = {24}
+_VIRTUAL_TYPES = {53}
+
+
+class IdleTimeout(Exception):
+    """No WebSocket bytes arrived before the keepalive interval."""
+
+
+def _octets(ip: str) -> tuple[int, int, int, int] | None:
+    parts = (ip or "").split(".")
+    if len(parts) != 4:
+        return None
+    try:
+        nums = tuple(int(part) for part in parts)
+    except ValueError:
+        return None
+    if any(num < 0 or num > 255 for num in nums):
+        return None
+    return nums  # type: ignore[return-value]
+
+
+def _ip_kind(ip: str) -> str:
+    nums = _octets(ip)
+    if not nums:
+        return "bad"
+    first, second = nums[0], nums[1]
+    if first == 127 or first == 0:
+        return "loop" if first == 127 else "bad"
+    if first == 169 and second == 254:
+        return "link"
+    if first == 10:
+        return "priv10"
+    if first == 192 and second == 168:
+        return "priv192"
+    if first == 172 and 16 <= second <= 31:
+        return "priv172"
+    if first == 100 and 64 <= second <= 127:
+        return "cgnat"
+    return "global"
+
+
+def _vpnish_name(name: str) -> bool:
+    return bool(name) and _VPN_NAME.search(name) is not None
+
+
+def score_lan_candidate(name: str, ip: str, iftype: int | None = None) -> int | None:
+    """Higher is a better phone-reachable IPv4. None means unusable."""
+    kind = _ip_kind(ip)
+    if kind in ("bad", "loop") or iftype in _LOOP_TYPES:
+        return None
+    base = {
+        "priv192": 300,
+        "priv10": 280,
+        "priv172": 260,
+        "global": 120,
+        "cgnat": 80,
+        "link": 20,
+    }[kind]
+    if _vpnish_name(name) or iftype in _TUNNEL_TYPES:
+        base -= 200
+    elif iftype in _VIRTUAL_TYPES:
+        base -= 40
+    return base
+
+
+def pick_lan(candidates: list[tuple[str, str, int | None]]) -> tuple[str, bool] | None:
+    """Pick the best (ip, reachable) pair. VPN loses when a LAN address exists."""
+    best_ip = None
+    best_score = None
+    best_vpn = False
+    for name, ip, iftype in candidates:
+        score = score_lan_candidate(name, ip, iftype)
+        if score is None:
+            continue
+        if best_score is None or score > best_score:
+            best_ip = ip
+            best_score = score
+            best_vpn = _vpnish_name(name) or iftype in _TUNNEL_TYPES
+    if not best_ip:
+        return None
+    kind = _ip_kind(best_ip)
+    reachable = (not best_vpn) and kind in ("priv192", "priv10", "priv172", "global")
+    return best_ip, reachable
+
+
+def _udp_source(target: str) -> str | None:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        sock.connect((target, 80))
+        ip = sock.getsockname()[0]
+    except OSError:
+        return None
+    finally:
+        sock.close()
+    if not ip or _ip_kind(ip) in ("bad", "loop"):
+        return None
+    return ip
+
+
+def _unix_candidates() -> list[tuple[str, str, int | None]]:
+    libc_name = ctypes.util.find_library("c")
+    if not libc_name:
+        return []
+    libc = ctypes.CDLL(libc_name, use_errno=True)
+
+    class IfAddrs(ctypes.Structure):
+        pass
+
+    IfAddrs._fields_ = [
+        ("ifa_next", ctypes.POINTER(IfAddrs)),
+        ("ifa_name", ctypes.c_char_p),
+        ("ifa_flags", ctypes.c_uint),
+        ("ifa_addr", ctypes.c_void_p),
+        ("ifa_netmask", ctypes.c_void_p),
+        ("ifa_ifu", ctypes.c_void_p),
+        ("ifa_data", ctypes.c_void_p),
+    ]
+    getifaddrs = libc.getifaddrs
+    getifaddrs.argtypes = [ctypes.POINTER(ctypes.POINTER(IfAddrs))]
+    getifaddrs.restype = ctypes.c_int
+    freeifaddrs = libc.freeifaddrs
+    freeifaddrs.argtypes = [ctypes.POINTER(IfAddrs)]
+    freeifaddrs.restype = None
+
+    head = ctypes.POINTER(IfAddrs)()
+    if getifaddrs(ctypes.byref(head)) != 0:
+        return []
+    found: list[tuple[str, str, int | None]] = []
+    iff_up = 0x1
+    iff_loopback = 0x8
+    try:
+        cursor = head
+        while cursor:
+            ifa = cursor.contents
+            name = ifa.ifa_name.decode("utf-8", "replace") if ifa.ifa_name else ""
+            flags = int(ifa.ifa_flags)
+            addr = ifa.ifa_addr
+            if addr and (flags & iff_up) and not (flags & iff_loopback):
+                raw = ctypes.string_at(addr, 16)
+                if sys.platform == "darwin":
+                    family = raw[1]
+                else:
+                    family = struct.unpack_from("=H", raw, 0)[0]
+                if family == socket.AF_INET:
+                    ip = socket.inet_ntoa(raw[4:8])
+                    found.append((name, ip, None))
+            cursor = ifa.ifa_next
+    finally:
+        if head:
+            freeifaddrs(head)
+    return found
+
+
+def _windows_candidates() -> list[tuple[str, str, int | None]]:
+    from ctypes import wintypes
+
+    class SockAddr(ctypes.Structure):
+        _fields_ = [("sa_family", wintypes.USHORT), ("sa_data", ctypes.c_char * 14)]
+
+    class SocketAddress(ctypes.Structure):
+        _fields_ = [("lpSockaddr", ctypes.POINTER(SockAddr)), ("iSockaddrLength", wintypes.INT)]
+
+    class Unicast(ctypes.Structure):
+        pass
+
+    Unicast._fields_ = [
+        ("Length", wintypes.ULONG),
+        ("Flags", wintypes.DWORD),
+        ("Next", ctypes.POINTER(Unicast)),
+        ("Address", SocketAddress),
+        ("PrefixOrigin", ctypes.c_int),
+        ("SuffixOrigin", ctypes.c_int),
+        ("DadState", ctypes.c_int),
+        ("ValidLifetime", wintypes.ULONG),
+        ("PreferredLifetime", wintypes.ULONG),
+        ("LeaseLifetime", wintypes.ULONG),
+        ("OnLinkPrefixLength", ctypes.c_uint8),
+    ]
+
+    class Adapter(ctypes.Structure):
+        pass
+
+    Adapter._fields_ = [
+        ("Length", wintypes.ULONG),
+        ("IfIndex", wintypes.DWORD),
+        ("Next", ctypes.POINTER(Adapter)),
+        ("AdapterName", ctypes.c_char_p),
+        ("FirstUnicastAddress", ctypes.POINTER(Unicast)),
+        ("FirstAnycastAddress", ctypes.c_void_p),
+        ("FirstMulticastAddress", ctypes.c_void_p),
+        ("FirstDnsServerAddress", ctypes.c_void_p),
+        ("DnsSuffix", ctypes.c_wchar_p),
+        ("Description", ctypes.c_wchar_p),
+        ("FriendlyName", ctypes.c_wchar_p),
+        ("PhysicalAddress", ctypes.c_ubyte * 8),
+        ("PhysicalAddressLength", wintypes.DWORD),
+        ("Flags", wintypes.DWORD),
+        ("Mtu", wintypes.DWORD),
+        ("IfType", wintypes.DWORD),
+        ("OperStatus", ctypes.c_int),
+    ]
+
+    af_inet = 2
+    flags = 0x0002 | 0x0004 | 0x0008  # skip anycast, multicast, DNS
+    overflow = 111
+    iphlpapi = ctypes.WinDLL("iphlpapi")
+    get_adapters = iphlpapi.GetAdaptersAddresses
+    get_adapters.argtypes = [
+        ctypes.c_ulong,
+        ctypes.c_ulong,
+        ctypes.c_void_p,
+        ctypes.POINTER(Adapter),
+        ctypes.POINTER(ctypes.c_ulong),
+    ]
+    get_adapters.restype = ctypes.c_ulong
+
+    size = ctypes.c_ulong(16 * 1024)
+    buf = None
+    ret = overflow
+    for _ in range(4):
+        buf = ctypes.create_string_buffer(size.value)
+        ret = get_adapters(af_inet, flags, None, ctypes.cast(buf, ctypes.POINTER(Adapter)), ctypes.byref(size))
+        if ret != overflow:
+            break
+    if ret != 0 or buf is None:
+        return []
+
+    found: list[tuple[str, str, int | None]] = []
+    cursor = ctypes.cast(buf, ctypes.POINTER(Adapter))
+    while cursor:
+        adapter = cursor.contents
+        if adapter.FriendlyName:
+            name = str(adapter.FriendlyName)
+        elif adapter.AdapterName:
+            name = adapter.AdapterName.decode("ascii", "replace")
+        else:
+            name = ""
+        uni = adapter.FirstUnicastAddress
+        while uni:
+            entry = uni.contents
+            sockaddr = entry.Address.lpSockaddr
+            if sockaddr and int(sockaddr.contents.sa_family) == af_inet:
+                raw = bytes(sockaddr.contents.sa_data)
+                ip = socket.inet_ntoa(raw[2:6])
+                found.append((name, ip, int(adapter.IfType)))
+            uni = entry.Next
+        cursor = adapter.Next
+    return found
+
+
+def _interface_candidates() -> list[tuple[str, str, int | None]]:
+    if sys.platform == "win32":
+        return _windows_candidates()
+    return _unix_candidates()
+
+
+def lan_endpoint() -> tuple[str, bool]:
+    """LAN-reachable IPv4 and whether phones on the same Wi-Fi can use it."""
+    candidates: list[tuple[str, str, int | None]] = []
+    try:
+        candidates.extend(_interface_candidates())
+    except Exception:
+        candidates = []
+    chosen = pick_lan(candidates)
+    if chosen:
+        return chosen
+    probed: list[tuple[str, str, int | None]] = []
+    seen: set[str] = set()
+    for target in ("192.168.1.1", "192.168.0.1", "10.1.1.1", "10.0.0.1", "172.16.0.1", "8.8.8.8"):
+        ip = _udp_source(target)
+        if ip and ip not in seen:
+            seen.add(ip)
+            probed.append(("", ip, None))
+    chosen = pick_lan(probed)
+    if chosen:
+        return chosen
+    try:
+        host_ip = socket.gethostbyname(socket.gethostname())
+    except OSError:
+        host_ip = "127.0.0.1"
+    chosen = pick_lan([("", host_ip, None)])
+    if chosen:
+        return chosen
+    return "127.0.0.1", False
 
 
 def lan_ip() -> str:
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        sock.connect(("8.8.8.8", 80))
-        return sock.getsockname()[0]
-    except OSError:
-        try:
-            return socket.gethostbyname(socket.gethostname())
-        except OSError:
-            return "127.0.0.1"
-    finally:
-        sock.close()
+    return lan_endpoint()[0]
+
+
+def info_payload() -> dict:
+    ip, reachable = lan_endpoint()
+    port = BOUND_PORT
+    return {
+        "ip": ip,
+        "port": port,
+        "join": f"http://{ip}:{port}/play",
+        "reachable": reachable,
+    }
+
+
+def lock_for(conn: socket.socket) -> threading.Lock:
+    key = id(conn)
+    with SEND_LOCKS_GUARD:
+        lock = SEND_LOCKS.get(key)
+        if lock is None:
+            lock = threading.Lock()
+            SEND_LOCKS[key] = lock
+        return lock
+
+
+def forget_conn(conn: socket.socket) -> None:
+    with SEND_LOCKS_GUARD:
+        SEND_LOCKS.pop(id(conn), None)
 
 
 def recvn(conn: socket.socket, n: int) -> bytes:
@@ -71,10 +395,9 @@ def read_http_head(conn: socket.socket) -> tuple[str, dict[str, str], bytes]:
     return request, headers, rest
 
 
-def ws_send(conn: socket.socket, text: str) -> None:
-    payload = text.encode("utf-8")
+def _ws_frame(opcode: int, payload: bytes) -> bytes:
     n = len(payload)
-    header = bytearray([0x81])
+    header = bytearray([0x80 | (opcode & 0x0F)])
     if n < 126:
         header.append(n)
     elif n < 65536:
@@ -83,11 +406,42 @@ def ws_send(conn: socket.socket, text: str) -> None:
     else:
         header.append(127)
         header += struct.pack(">Q", n)
-    conn.sendall(bytes(header) + payload)
+    return bytes(header) + payload
+
+
+def ws_send(conn: socket.socket, text: str) -> None:
+    frame = _ws_frame(0x1, text.encode("utf-8"))
+    with lock_for(conn):
+        conn.sendall(frame)
+
+
+def ws_ping(conn: socket.socket) -> None:
+    with lock_for(conn):
+        conn.sendall(bytes([0x89, 0x00]))
+
+
+def ws_pong(conn: socket.socket, payload: bytes) -> None:
+    if len(payload) > 125:
+        payload = payload[:125]
+    with lock_for(conn):
+        conn.sendall(bytes([0x8A, len(payload)]) + payload)
 
 
 def ws_read(conn: socket.socket) -> tuple[int, bytes]:
-    b1, b2 = recvn(conn, 2)
+    """Read one frame. Raise IdleTimeout when the socket is quiet."""
+    conn.settimeout(PING_EVERY)
+    try:
+        try:
+            first = conn.recv(2)
+        except TimeoutError:
+            raise IdleTimeout()
+    finally:
+        conn.settimeout(None)
+    if not first:
+        raise ConnectionError("socket closed")
+    if len(first) == 1:
+        first += recvn(conn, 1)
+    b1, b2 = first[0], first[1]
     opcode = b1 & 0x0F
     masked = (b2 & 0x80) != 0
     length = b2 & 0x7F
@@ -169,23 +523,59 @@ def ensure_room(code: str) -> dict:
     code = code.strip().upper()
     with ROOMS_LOCK:
         if code not in ROOMS:
-            ROOMS[code] = {"code": code, "host": None, "clients": {}}
+            ROOMS[code] = {"code": code, "host": None, "clients": {}, "host_token": 0}
         return ROOMS[code]
 
 
-def drop_client(room: dict, client_id: str) -> None:
-    client = room["clients"].pop(client_id, None)
-    if room.get("host") and room["host"][0] == client_id:
-        room["host"] = None
-        dead = list(room["clients"].items())
+def _expire_host(code: str, token: int) -> None:
+    victims: list[tuple] = []
+    with ROOMS_LOCK:
+        room = ROOMS.get(code)
+        if not room or room.get("host_token") != token or room.get("host"):
+            return
+        victims = list(room["clients"].items())
         room["clients"].clear()
-        for _cid, (_conn, _role) in dead:
-            try:
-                ws_send(_conn, json.dumps({"op": "hostgone"}))
-            except OSError:
-                pass
-        return
+        room.pop("host_grace", None)
+    for _cid, (conn, _role) in victims:
+        try:
+            ws_send(conn, json.dumps({"op": "hostgone"}))
+        except OSError:
+            pass
+        try:
+            conn.close()
+        except OSError:
+            pass
+
+
+def _schedule_host_expiry(room: dict) -> None:
+    old = room.pop("host_grace", None)
+    if old:
+        old.cancel()
+    token = int(room.get("host_token") or 0) + 1
+    room["host_token"] = token
+    timer = threading.Timer(HOST_GRACE_SEC, _expire_host, args=(room["code"], token))
+    timer.daemon = True
+    room["host_grace"] = timer
+    timer.start()
+
+
+def _claim_host(room: dict, client_id: str, conn: socket.socket) -> None:
+    old = room.pop("host_grace", None)
+    if old:
+        old.cancel()
+    room["host_token"] = int(room.get("host_token") or 0) + 1
+    room["host"] = (client_id, conn)
+    room["clients"][client_id] = (conn, "host")
+
+
+def drop_client(room: dict, client_id: str) -> None:
+    room["clients"].pop(client_id, None)
     host = room.get("host")
+    if host and host[0] == client_id:
+        room["host"] = None
+        # Keep phones in the room long enough for the TV to reconnect.
+        _schedule_host_expiry(room)
+        return
     if host:
         try:
             ws_send(host[1], json.dumps({"op": "left", "id": client_id}))
@@ -203,19 +593,23 @@ class ClientThread(threading.Thread):
     def run(self) -> None:
         try:
             while True:
-                opcode, data = ws_read(self.conn)
-                if opcode == 0x8:
-                    break
-                if opcode == 0x9:
-                    # pong
+                try:
+                    opcode, data = ws_read(self.conn)
+                except IdleTimeout:
                     try:
-                        payload = data
-                        header = bytearray([0x8A, len(payload)])
-                        self.conn.sendall(bytes(header) + payload)
+                        ws_ping(self.conn)
                     except OSError:
                         break
                     continue
-                if opcode != 0x1:
+                if opcode == 0x8:
+                    break
+                if opcode == 0x9:
+                    try:
+                        ws_pong(self.conn, data)
+                    except OSError:
+                        break
+                    continue
+                if opcode == 0xA or opcode != 0x1:
                     continue
                 self.handle(data.decode("utf-8", "replace"))
         except ConnectionError:
@@ -231,6 +625,7 @@ class ClientThread(threading.Thread):
                 self.conn.close()
             except OSError:
                 pass
+            forget_conn(self.conn)
 
     def handle(self, raw: str) -> None:
         msg = json.loads(raw)
@@ -297,7 +692,11 @@ def accept_ws(conn: socket.socket, headers: dict[str, str], first_path: str) -> 
     )
     conn.sendall(response.encode("ascii"))
     # The first client message declares role and room.
-    opcode, data = ws_read(conn)
+    try:
+        opcode, data = ws_read(conn)
+    except IdleTimeout:
+        conn.close()
+        return
     if opcode != 0x1:
         conn.close()
         return
@@ -317,8 +716,7 @@ def accept_ws(conn: socket.socket, headers: dict[str, str], first_path: str) -> 
                 ws_send(conn, json.dumps({"op": "err", "msg": "That room already has a host."}))
                 conn.close()
                 return
-            room["host"] = (client_id, conn)
-            room["clients"][client_id] = (conn, "host")
+            _claim_host(room, client_id, conn)
         else:
             if room["host"] is None:
                 ws_send(conn, json.dumps({"op": "err", "msg": "No host is waiting on that code."}))
@@ -342,7 +740,8 @@ def accept_ws(conn: socket.socket, headers: dict[str, str], first_path: str) -> 
                 }))
             except OSError:
                 pass
-    ws_send(conn, json.dumps({"op": "welcome", "id": client_id, "role": role if role == "host" else room["clients"][client_id][1], "room": code}))
+    role_now = role if role == "host" else room["clients"][client_id][1]
+    ws_send(conn, json.dumps({"op": "welcome", "id": client_id, "role": role_now, "room": code}))
     print(f"  joined {code} as {role} id={client_id}", flush=True)
     HANDED.add(id(conn))
     ClientThread(conn, code, client_id).start()
@@ -359,8 +758,7 @@ def handle_http(conn: socket.socket, request: str) -> None:
         return
     clean = path.split("?", 1)[0]
     if clean == "/api/info":
-        ip = lan_ip()
-        body = json.dumps({"ip": ip, "port": PORT, "join": f"http://{ip}:{PORT}/play"}).encode("utf-8")
+        body = json.dumps(info_payload()).encode("utf-8")
         send_http(conn, 200, body, "application/json; charset=utf-8")
         return
     full = resolve_path(clean)
@@ -394,35 +792,67 @@ def client_thread(conn: socket.socket, _addr) -> None:
         conn.close()
     except OSError:
         pass
+    forget_conn(conn)
+
+
+def bind_server() -> tuple[socket.socket, int]:
+    """Bind 8741, then 8742–8750. Exit with a clear message if every port fails."""
+    errors: list[str] = []
+    for port in range(PORT_FIRST, PORT_LAST + 1):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.bind(("0.0.0.0", port))
+            sock.listen(64)
+            return sock, port
+        except OSError as exc:
+            reason = exc.strerror or str(exc)
+            errors.append(f"  {port}: {reason}")
+            try:
+                sock.close()
+            except OSError:
+                pass
+    print("", flush=True)
+    print("  PDG PARTY could not start.", flush=True)
+    print(f"  Every port from {PORT_FIRST} through {PORT_LAST} failed:", flush=True)
+    for line in errors:
+        print(line, flush=True)
+    print("  Close the other PDG Party window, or free one of those ports, then start again.", flush=True)
+    print("", flush=True)
+    raise SystemExit(1)
 
 
 def serve() -> None:
-    ip = lan_ip()
-    host_url = f"http://127.0.0.1:{PORT}/"
-    join_url = f"http://{ip}:{PORT}/play"
-    print("")
-    print("  PDG PARTY")
-    print("  Unofficial study aid. Not an Air Force product.")
-    print("")
-    print(f"  Host screen:  {host_url}")
-    print(f"  Phones join:  {join_url}")
-    print(f"  Listening on 0.0.0.0:{PORT}")
-    print("  Leave this window open. Ctrl+C stops the game.")
-    print("")
+    global BOUND_PORT
+    sock, port = bind_server()
+    BOUND_PORT = port
+    ip, reachable = lan_endpoint()
+    host_url = f"http://127.0.0.1:{port}/"
+    join_url = f"http://{ip}:{port}/play"
+    print("", flush=True)
+    print("  PDG PARTY", flush=True)
+    print("  Unofficial study aid. Not an Air Force product.", flush=True)
+    print("", flush=True)
+    print(f"  Chosen port:  {port}", flush=True)
+    if port != PORT_FIRST:
+        print(f"  Port {PORT_FIRST} was busy. Using {port} instead.", flush=True)
+    print(f"  Host screen:  {host_url}", flush=True)
+    print(f"  Phones join:  {join_url}", flush=True)
+    print(f"  Listening on  0.0.0.0:{port}", flush=True)
+    if not reachable:
+        print("  No LAN address found. Phones cannot join until this computer has a Wi-Fi or Ethernet IP.", flush=True)
+    print("  Leave this window open. Ctrl+C stops the game.", flush=True)
+    print("", flush=True)
     try:
         threading.Timer(0.6, lambda: webbrowser.open(host_url)).start()
     except Exception:
         pass
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.bind(("0.0.0.0", PORT))
-    sock.listen(64)
     try:
         while True:
             conn, addr = sock.accept()
             threading.Thread(target=client_thread, args=(conn, addr), daemon=True).start()
     except KeyboardInterrupt:
-        print("\n  Shutting down.")
+        print("\n  Shutting down.", flush=True)
     finally:
         sock.close()
 

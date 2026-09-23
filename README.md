@@ -11,12 +11,12 @@ Questions are original to this project. The handbook is the factual base. Wordin
 You need Python 3. Nothing to `pip install`.
 
 1. Mac: double-click `start.command`. Windows: double-click `start.bat`. Linux: double-click `start.sh` or run `./start.sh`.
-2. Leave the terminal window open. The host screen opens at `http://127.0.0.1:8741/`.
+2. Leave the terminal window open. The host screen opens at `http://127.0.0.1:8741/` (or the next free port through 8750 if 8741 is taken; the window prints the chosen port). On Windows the launcher tries `py -3`, then `python`, then `python3`.
 3. Click **Host a room**.
 4. Phones join the link printed in that window (and shown as a QR code on the TV). They type the 4-character room code and a callsign.
 5. Click **3-minute brief** for a short Boards & Brief, or pick any mode.
 
-The server listens on `0.0.0.0:8741`. Same Wi-Fi is required. A guest network that blocks phone-to-computer traffic will not work.
+The server listens on `0.0.0.0` and prefers port 8741. If that port is busy it tries 8742–8750 and prints the one it picked. `/api/info` returns that port and a LAN address (private Wi-Fi or Ethernet ahead of VPN and tunnel adapters). Same Wi-Fi is required. A guest network that blocks phone-to-computer traffic will not work, and the computer firewall has to allow Python.
 
 No Python? Double-click `START.html`. That opens Quiet Hours in the browser for one person. Phones cannot join a file opened that way.
 

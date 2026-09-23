@@ -1,6 +1,8 @@
 (function () {
   var PDG = window.PDG;
-  var ui = { screen: "attract", error: "", solo: null, mock: null, install: null };
+  var ui = { screen: "attract", error: "", solo: null, mock: null, install: null, lanUnreachable: false };
+  var joinInfo = null;
+  var COACH = "Use the same Wi-Fi, not a guest network, and allow Python through the firewall.";
   var bank = null;
   var game = null;
   var link = null;
@@ -45,13 +47,73 @@
     });
   }
 
+  function applyJoin() {
+    if (!game) return;
+    var next = game.joinUrl;
+    var unreachable = ui.lanUnreachable;
+    if (location.protocol === "file:") {
+      next = "Phones need the launcher. This file is Quiet Hours only.";
+      unreachable = true;
+    } else if (joinInfo && joinInfo.join) {
+      next = joinInfo.join + "?room=" + game.room;
+      unreachable = joinInfo.reachable === false || joinInfo.ip === "127.0.0.1";
+    }
+    var changed = game.joinUrl !== next || ui.lanUnreachable !== unreachable;
+    game.joinUrl = next;
+    ui.lanUnreachable = unreachable;
+    if (changed && (ui.screen === "lobby" || (game.phase === "lobby" && ui.screen !== "solo" && ui.screen !== "mock" && ui.screen !== "about"))) {
+      lastKey = "";
+      render();
+    }
+  }
+
+  function refreshJoin() {
+    if (!game) return;
+    if (location.protocol === "file:") {
+      var firstFile = !refreshJoin.sawFile;
+      refreshJoin.sawFile = true;
+      applyJoin();
+      if (firstFile) {
+        ui.screen = "solo";
+        ui.solo = ui.solo || { track: "E5" };
+        render();
+      }
+      return;
+    }
+    fetch("api/info", { cache: "no-store" }).then(function (r) {
+      if (!r.ok) throw new Error("info");
+      return r.json();
+    }).then(function (info) {
+      joinInfo = info;
+      applyJoin();
+    }).catch(function () {
+      if (!game.joinUrl) game.joinUrl = location.origin + "/play?room=" + game.room;
+      var hostName = location.hostname;
+      var local = hostName === "localhost" || hostName === "127.0.0.1";
+      if (local && !ui.lanUnreachable) {
+        ui.lanUnreachable = true;
+        if (ui.screen === "lobby") {
+          lastKey = "";
+          render();
+        }
+      }
+    });
+  }
+
   function connectHost() {
     if (link) link.close();
+    var welcomed = false;
     link = PDG.connect({
       role: "host",
       room: game.room,
       handlers: {
-        welcome: function () {},
+        welcome: function () {
+          welcomed = true;
+          var had = ui.error;
+          ui.error = "";
+          pushState();
+          if (had) render();
+        },
         joined: function (p) {
           game.addPlayer(p);
           PDG.audio.play("join");
@@ -60,10 +122,19 @@
         act: function (msg) { game.receive(msg.from, msg.payload || {}); },
         error: function (message) {
           ui.error = message || "Room error";
-          if (String(message).indexOf("already") !== -1) {
+          if (!welcomed && String(message).indexOf("already") !== -1) {
             game.configureRoom(PDG.roomCode());
+            applyJoin();
             connectHost();
+            return;
           }
+          render();
+        },
+        offline: function () {
+          if (welcomed) return;
+          var line = "Room relay is not reachable. " + COACH;
+          if (ui.error === line) return;
+          ui.error = line;
           render();
         }
       }
@@ -186,7 +257,9 @@
       "</div>" +
       (ui.error ? '<p class="warn">' + PDG.esc(ui.error) + "</p>" : "") +
       '<div class="roster">' + roster + "</div></div>" +
-      '<div><div class="qr" id="qr">' + qr + '</div><p class="fine">Join URL</p><p>' + PDG.esc(game.joinUrl || "Starting local server…") + "</p><p class=\"fine\">Open a second browser at /play to be a phone.</p></div></div>";
+      '<div><div class="qr" id="qr">' + qr + '</div><p class="fine">Join URL</p><p>' + PDG.esc(game.joinUrl || "Starting local server…") + "</p>" +
+      (ui.lanUnreachable ? '<p class="warn">Phones cannot reach this computer. ' + PDG.esc(COACH) + "</p>" : "") +
+      '<p class="fine">Open a second browser at /play to be a phone.</p></div></div>';
   }
 
   function fieldRank(v) {
@@ -431,7 +504,7 @@
 
   function bind() {
     var map = {
-      host: function () { ui.screen = "lobby"; game.toLobby(); connectHost(); },
+      host: function () { ui.screen = "lobby"; game.toLobby(); connectHost(); refreshJoin(); },
       solo: function () { ui.screen = "solo"; ui.solo = { track: "E5" }; render(); },
       about: function () { ui.screen = "about"; render(); },
       back: function () { ui.screen = game.phase === "lobby" ? "lobby" : "attract"; if (ui.screen === "attract") game.phase = "attract"; render(); },
@@ -570,18 +643,11 @@
     game.on(function () { pushState(); render(); });
     var params = new URLSearchParams(location.search);
     if (params.get("quiet") === "1") { ui.screen = "solo"; ui.solo = { track: "E5" }; }
-    fetch("api/info").then(function (r) { return r.json(); }).then(function (info) {
-      game.joinUrl = info.join + "?room=" + game.room;
-      render();
-    }).catch(function () {
-      if (location.protocol === "file:") {
-        game.joinUrl = "Phones need the launcher. This file is Quiet Hours only.";
-        ui.screen = "solo";
-        ui.solo = ui.solo || { track: "E5" };
-      } else {
-        game.joinUrl = location.origin + "/play?room=" + game.room;
-      }
-      render();
+    refreshJoin();
+    setInterval(refreshJoin, 15000);
+    window.addEventListener("focus", refreshJoin);
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "visible") refreshJoin();
     });
     render();
     setInterval(function () {

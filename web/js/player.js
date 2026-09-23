@@ -177,7 +177,19 @@
         },
         error: function (message) { ui.error = message || "Could not join."; ui.linked = false; render(); },
         hostgone: function () { ui.error = "Host closed the room."; ui.linked = false; ui.state = null; render(); },
-        close: function () { if (ui.linked) ui.error = "Connection dropped. Join again."; }
+        offline: function () {
+          var line = "Could not join the host. Use the same Wi-Fi, not a guest network, and allow Python through the firewall.";
+          if (ui.error === line && !ui.linked) return;
+          ui.linked = false;
+          ui.error = line;
+          render();
+        },
+        close: function () {
+          if (!ui.linked) return;
+          ui.linked = false;
+          ui.error = "Connection dropped. Reconnecting…";
+          render();
+        }
       }
     });
   }

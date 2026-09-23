@@ -1,4 +1,4 @@
-var VERSION = "pdg-party-v3";
+var VERSION = "pdg-party-v4";
 var CORE = [
   "/",
   "/index.html",
@@ -35,15 +35,74 @@ var CORE = [
   "/assets/audio/join.wav",
   "/assets/audio/reveal.wav",
   "/assets/audio/fanfare.wav",
+  "/assets/audio/roast.wav",
   "/assets/img/logo.svg",
+  "/assets/img/favicon.svg",
+  "/assets/img/ramp.svg",
   "/assets/img/chief-idle.svg",
+  "/assets/img/chief-talk.svg",
+  "/assets/img/chief-roast.svg",
+  "/assets/img/chief-celebrate.svg",
+  "/assets/img/chief-facepalm.svg",
+  "/assets/img/avatar-break-time.svg",
+  "/assets/img/avatar-chk-ride.svg",
+  "/assets/img/avatar-coffee-nco.svg",
+  "/assets/img/avatar-fast-rope.svg",
+  "/assets/img/avatar-hot-wash.svg",
+  "/assets/img/avatar-last-light.svg",
+  "/assets/img/avatar-open-book.svg",
+  "/assets/img/avatar-regs-demon.svg",
+  "/assets/img/chapter-1.svg",
+  "/assets/img/chapter-2.svg",
+  "/assets/img/chapter-3.svg",
+  "/assets/img/chapter-4.svg",
+  "/assets/img/chapter-5.svg",
+  "/assets/img/chapter-6.svg",
+  "/assets/img/chapter-7.svg",
+  "/assets/img/chapter-8.svg",
+  "/assets/img/chapter-9.svg",
+  "/assets/img/chapter-10.svg",
+  "/assets/img/chapter-11.svg",
+  "/assets/img/chapter-12.svg",
+  "/assets/img/chapter-13.svg",
+  "/assets/img/chapter-14.svg",
+  "/assets/img/chapter-15.svg",
+  "/assets/img/chapter-16.svg",
+  "/assets/img/chapter-17.svg",
+  "/assets/img/chapter-18.svg",
+  "/assets/img/chapter-19.svg",
+  "/assets/img/chapter-20.svg",
+  "/assets/img/chapter-21.svg",
+  "/assets/img/chapter-22.svg",
+  "/assets/img/chapter-23.svg",
+  "/assets/img/chapter-24.svg",
   "/assets/img/icon-192.png",
-  "/assets/img/icon-512.png"
+  "/assets/img/icon-512.png",
+  "/assets/icons/award.svg",
+  "/assets/icons/book-open.svg",
+  "/assets/icons/flag.svg",
+  "/assets/icons/heart-pulse.svg",
+  "/assets/icons/messages-square.svg",
+  "/assets/icons/qr-code.svg",
+  "/assets/icons/scale.svg",
+  "/assets/icons/shield.svg",
+  "/assets/icons/sun-moon.svg",
+  "/assets/icons/timer.svg",
+  "/assets/icons/users.svg",
+  "/assets/icons/volume-2.svg",
+  "/assets/icons/volume-x.svg",
+  "/assets/icons/zap.svg"
 ];
+
+function addEach(cache, urls) {
+  return Promise.all(urls.map(function (url) {
+    return cache.add(url).catch(function () { return null; });
+  }));
+}
 
 self.addEventListener("install", function (event) {
   event.waitUntil(caches.open(VERSION).then(function (cache) {
-    return cache.addAll(CORE).catch(function () { return cache.addAll(["/", "/index.html", "/play.html", "/css/app.css"]); });
+    return addEach(cache, CORE);
   }));
   self.skipWaiting();
 });

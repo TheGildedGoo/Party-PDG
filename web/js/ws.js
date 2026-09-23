@@ -1,4 +1,6 @@
-/* WebSocket relay client. Falls back to BroadcastChannel on the same browser. */
+/* WebSocket relay client.
+   file:// Quiet Hours stays on BroadcastChannel (same browser only).
+   http(s) reconnects with backoff. BroadcastChannel is not a phone path. */
 (function (root) {
   var PDG = root.PDG = root.PDG || {};
 
@@ -10,6 +12,9 @@
     var ws = null;
     var bc = null;
     var mode = "ws";
+    var attempt = 0;
+    var timer = null;
+    var generation = 0;
 
     function emit(name, arg) {
       if (handlers[name]) handlers[name](arg);
@@ -21,8 +26,29 @@
       else if (mode === "bc" && bc) bc.postMessage(obj);
     }
 
-    function bindSocket(socket) {
+    function hello() {
+      sendRaw({
+        op: "hello",
+        role: role,
+        room: room,
+        name: opts.name || "",
+        avatar: opts.avatar || "",
+        audience: !!opts.audience
+      });
+    }
+
+    function scheduleReconnect() {
+      if (closed || mode === "bc" || location.protocol === "file:") return;
+      var delay = Math.min(8000, 500 * Math.pow(2, attempt));
+      attempt += 1;
+      if (timer) clearTimeout(timer);
+      emit("reconnecting", delay);
+      timer = setTimeout(startWs, delay);
+    }
+
+    function bindSocket(socket, gen) {
       ws = socket;
+      var opened = false;
       ws.onmessage = function (ev) {
         var msg;
         try { msg = JSON.parse(ev.data); } catch (e) { return; }
@@ -36,44 +62,34 @@
         else if (msg.op === "hostgone") emit("hostgone", msg);
         else if (msg.op === "err") emit("error", msg.msg || "Connection refused.");
       };
-      ws.onclose = function () {
-        if (!closed) emit("close");
-      };
-      ws.onerror = function () {
-        if (ws.readyState === 0 || ws.readyState === 3) {
-          /* onclose follows */
-        }
-      };
       ws.onopen = function () {
-        sendRaw({
-          op: "hello",
-          role: role,
-          room: room,
-          name: opts.name || "",
-          avatar: opts.avatar || "",
-          audience: !!opts.audience
-        });
+        if (closed || gen !== generation) return;
+        opened = true;
+        attempt = 0;
+        hello();
+      };
+      ws.onclose = function () {
+        if (closed || gen !== generation) return;
+        if (!opened) emit("offline");
+        else emit("close");
+        scheduleReconnect();
       };
     }
 
     function startWs() {
+      if (closed) return;
+      mode = "ws";
       var proto = location.protocol === "https:" ? "wss://" : "ws://";
+      var gen = ++generation;
       var socket;
       try {
         socket = new WebSocket(proto + location.host + "/ws");
       } catch (e) {
-        startBc();
+        emit("offline");
+        scheduleReconnect();
         return;
       }
-      var opened = false;
-      socket.addEventListener("open", function () { opened = true; });
-      socket.addEventListener("error", function () {
-        if (!opened) {
-          try { socket.close(); } catch (err) { /* ignore */ }
-          startBc();
-        }
-      });
-      bindSocket(socket);
+      bindSocket(socket, gen);
     }
 
     function startBc() {
@@ -123,8 +139,30 @@
       emit("fallback", "broadcast");
     }
 
+    function onBrowserOffline() {
+      if (closed || mode !== "ws") return;
+      if (ws && ws.readyState !== 3) {
+        try { ws.close(); } catch (e) { /* ignore */ }
+      }
+    }
+
+    function onBrowserOnline() {
+      if (closed || mode !== "ws") return;
+      if (ws && (ws.readyState === 0 || ws.readyState === 1)) return;
+      if (timer) clearTimeout(timer);
+      timer = null;
+      attempt = 0;
+      startWs();
+    }
+
     if (location.protocol === "file:") startBc();
-    else startWs();
+    else {
+      startWs();
+      if (typeof root.addEventListener === "function") {
+        root.addEventListener("offline", onBrowserOffline);
+        root.addEventListener("online", onBrowserOnline);
+      }
+    }
 
     return {
       sendState: function (state) {
@@ -141,6 +179,12 @@
       },
       close: function () {
         closed = true;
+        generation += 1;
+        if (timer) clearTimeout(timer);
+        if (typeof root.removeEventListener === "function") {
+          root.removeEventListener("offline", onBrowserOffline);
+          root.removeEventListener("online", onBrowserOnline);
+        }
         if (ws) try { ws.close(); } catch (e) { /* ignore */ }
         if (bc) {
           bc.postMessage({ op: "left", room: room, id: opts.localId });
