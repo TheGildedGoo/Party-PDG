@@ -1,5 +1,5 @@
-import { fail } from "../../lib/http.js";
-import { listCodes, createCode, mutateCode } from "../../lib/actions/admin.js";
+import { fail } from "../lib/http.js";
+import { listCodes, createCode, mutateCode } from "../lib/actions/admin.js";
 
 export async function GET(request) {
   try {
