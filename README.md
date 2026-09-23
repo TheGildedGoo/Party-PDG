@@ -22,7 +22,9 @@ No Python? Double-click `START.html`. That opens Quiet Hours in the browser for 
 
 ## Play from anywhere
 
-https://pdg-play.com is the same host screen. **Host a party** opens a room on the Cloudflare relay (`relay/`, Worker `pdg-party-relay`) instead of the Python process. The TV shows a 4-character code and a QR for `https://pdg-play.com/play.html?room=CODE`. A phone on any network opens that link, enters a callsign, and joins. Same message shapes as the LAN server. The Python launcher is unchanged: ports 8741–8750 still use same-origin `/ws`.
+https://pdg-play.com is the same host screen. **Host a party** mints a room with `POST /rooms` on the Cloudflare relay (`relay/`, Worker `pdg-party-relay`) and dials `wss://`. The TV shows a 4-character code and a QR for `https://pdg-play.com/play.html?room=CODE`. A phone looks the code up with `GET /rooms/CODE`, then joins from any network. Same message shapes as the LAN server. The relay does not score or store questions.
+
+`localhost` and `?relay=lan` stay on the Python server (`/ws`). The QR for those sessions includes `relay=lan`, so a phone on the LAN address uses the same socket. Solo and Quiet Hours do not open a WebSocket.
 
 The static client reads `window.PDG_RELAY_URL` from `web/js/relay-config.js`. There is no build step, so a Vercel environment variable is not injected. Deploy steps for the Worker are in `relay/README.md`.
 

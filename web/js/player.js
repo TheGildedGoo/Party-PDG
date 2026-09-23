@@ -170,6 +170,25 @@
     saveSession();
     ui.localId = "p" + Math.random().toString(16).slice(2, 8);
     if (link) link.close();
+    if (PDG.usesHostedRelay && PDG.usesHostedRelay() && PDG.lookupRoom) {
+      PDG.lookupRoom(ui.room).then(function (info) {
+        if (info && info.host === false) {
+          ui.error = "No host is waiting on that code.";
+          ui.linked = false;
+          render();
+          return;
+        }
+        openPlayerLink();
+      }).catch(function () {
+        openPlayerLink();
+      });
+      return;
+    }
+    openPlayerLink();
+  }
+
+  function openPlayerLink() {
+    if (link) link.close();
     link = PDG.connect({
       role: ui.audience ? "audience" : "player",
       room: ui.room,

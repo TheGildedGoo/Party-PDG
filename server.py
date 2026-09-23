@@ -466,7 +466,7 @@ def send_http(conn: socket.socket, status: int, body: bytes, content_type: str, 
         f"Content-Length: {len(body)}",
         "Cache-Control: no-cache",
         "X-Content-Type-Options: nosniff",
-        "Content-Security-Policy: default-src 'self'; connect-src 'self' ws: wss:; img-src 'self' data: blob:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; manifest-src 'self'; worker-src 'self'",
+        "Content-Security-Policy: default-src 'self'; connect-src 'self' ws: wss: https://*.workers.dev; img-src 'self' data: blob:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; manifest-src 'self'; worker-src 'self'",
         "Connection: close",
     ]
     for key, value in (extra or {}).items():

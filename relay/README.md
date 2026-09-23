@@ -47,12 +47,14 @@ Then paste the `wss://…/ws` URL into `web/js/relay-config.js` as `window.PDG_R
 
 ## How a room works
 
-1. On https://pdg-play.com, click **Host a party**. The TV mints a 4-character code and connects as `host`.
+1. On https://pdg-play.com, click **Host a party**. The page `POST`s `/rooms`, takes the 4-character code, and connects as `host`.
 2. The QR and join URL are `https://pdg-play.com/play.html?room=CODE` (`/play` rewrites to that file via `web/vercel.json`).
-3. The phone opens the link, confirms a callsign, and connects as `player` (or audience). The 9th scoring phone is demoted to audience, matching the LAN server. Audience caps at 32.
-4. Leave the host tab open. If it drops, phones stay for 12 seconds so a refresh can reclaim the room. After that they receive `hostgone`.
+3. The phone opens the link, confirms a callsign, `GET`s `/rooms/CODE`, and connects as `player` (or audience) on the hosted `wss://` URL. The 9th scoring phone is demoted to audience, matching the LAN server. Audience caps at 32.
+4. Leave the host tab open. If it drops, phones stay for 12 seconds so a refresh can reclaim the room. After that they receive `hostgone`. The hosted client sends a text `ping` every 20 seconds. The Durable Object answers `pong` without waking.
 
-Solo and Quiet Hours do not open a socket.
+`localhost` and a `?relay=lan` query use the Python server at `/ws` instead. Solo and Quiet Hours do not open a socket.
+
+`POST /rooms` returns `{ "room": "K7NP" }`. `GET /rooms/K7NP` returns `{ "room", "host", "players" }`.
 
 ## Local check
 

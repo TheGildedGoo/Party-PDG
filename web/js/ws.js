@@ -15,6 +15,7 @@
     var mode = "ws";
     var attempt = 0;
     var timer = null;
+    var pingTimer = null;
     var generation = 0;
 
     function emit(name, arg) {
@@ -52,6 +53,7 @@
       var opened = false;
       ws.onmessage = function (ev) {
         if (closed || gen !== generation) return;
+        if (ev.data === "pong") return;
         var msg;
         try { msg = JSON.parse(ev.data); } catch (e) { return; }
         if (msg.op === "welcome") emit("welcome", msg);
@@ -69,6 +71,7 @@
         opened = true;
         attempt = 0;
         hello();
+        startPing();
       };
       ws.onclose = function () {
         if (closed || gen !== generation) return;
@@ -78,14 +81,9 @@
       };
     }
 
-    function lanServer() {
-      var port = Number(location.port || 0);
-      return port >= 8741 && port <= 8750;
-    }
-
     function socketUrl() {
       var base;
-      if (lanServer()) {
+      if (useLanRelay()) {
         var proto = location.protocol === "https:" ? "wss://" : "ws://";
         base = proto + location.host + "/ws";
       } else {
@@ -94,6 +92,16 @@
       if (!base || base.indexOf("SUBDOMAIN") !== -1) return "";
       var join = base.indexOf("?") === -1 ? "?" : "&";
       return base + join + "room=" + encodeURIComponent(room);
+    }
+
+    function startPing() {
+      if (pingTimer) clearInterval(pingTimer);
+      pingTimer = null;
+      if (useLanRelay()) return;
+      pingTimer = setInterval(function () {
+        if (closed || !ws || ws.readyState !== 1) return;
+        try { ws.send("ping"); } catch (e) { /* ignore */ }
+      }, 20000);
     }
 
     function startWs() {
@@ -207,6 +215,8 @@
         closed = true;
         generation += 1;
         if (timer) clearTimeout(timer);
+        if (pingTimer) clearInterval(pingTimer);
+        pingTimer = null;
         if (typeof root.removeEventListener === "function") {
           root.removeEventListener("offline", onBrowserOffline);
           root.removeEventListener("online", onBrowserOnline);
@@ -220,14 +230,46 @@
     };
   }
 
-  function lanPort() {
-    var port = Number(root.location && root.location.port || 0);
-    return port >= 8741 && port <= 8750;
+  function useLanRelay() {
+    var loc = root.location;
+    if (!loc) return false;
+    var relay = "";
+    try { relay = new URLSearchParams(loc.search || "").get("relay") || ""; } catch (e) { relay = ""; }
+    if (String(relay).toLowerCase() === "lan") return true;
+    var host = loc.hostname;
+    return host === "localhost" || host === "127.0.0.1" || host === "::1";
+  }
+
+  function relayHttpBase() {
+    var base = String(root.PDG_RELAY_URL || "").replace(/\/$/, "");
+    if (!base || base.indexOf("SUBDOMAIN") !== -1) return "";
+    return base.replace(/^wss:/, "https:").replace(/^ws:/, "http:").replace(/\/ws$/, "");
   }
 
   PDG.connect = connect;
   PDG.usesHostedRelay = function () {
     var protocol = root.location && root.location.protocol;
-    return protocol !== "file:" && !lanPort();
+    return protocol !== "file:" && !useLanRelay();
+  };
+  PDG.mintRoom = function () {
+    var base = relayHttpBase();
+    if (!base) return Promise.reject(new Error("unconfigured"));
+    return fetch(base + "/rooms", { method: "POST", cache: "no-store" }).then(function (res) {
+      if (!res.ok) throw new Error("mint");
+      return res.json();
+    }).then(function (body) {
+      var code = String(body && body.room || "").toUpperCase();
+      if (!/^[A-Z0-9]{4}$/.test(code)) throw new Error("mint");
+      return code;
+    });
+  };
+  PDG.lookupRoom = function (room) {
+    var base = relayHttpBase();
+    var code = String(room || "").toUpperCase();
+    if (!base || !/^[A-Z0-9]{4}$/.test(code)) return Promise.reject(new Error("lookup"));
+    return fetch(base + "/rooms/" + encodeURIComponent(code), { cache: "no-store" }).then(function (res) {
+      if (!res.ok) throw new Error("lookup");
+      return res.json();
+    });
   };
 })(typeof globalThis !== "undefined" ? globalThis : this);

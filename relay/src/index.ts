@@ -46,6 +46,16 @@ function clipText(value: unknown, fallback: string, max: number): string {
   return text.slice(0, max) || fallback;
 }
 
+const ROOM_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function mintCode(): string {
+  const bytes = new Uint8Array(4);
+  crypto.getRandomValues(bytes);
+  let out = "";
+  for (const byte of bytes) out += ROOM_ALPHABET[byte % ROOM_ALPHABET.length];
+  return out;
+}
+
 function clientId(): string {
   const bytes = new Uint8Array(4);
   crypto.getRandomValues(bytes);
@@ -124,6 +134,17 @@ export class PartyRoom extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     this.ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
+  }
+
+  async status(): Promise<{ host: boolean; players: number }> {
+    const counts = this.counts();
+    return { host: counts.host > 0, players: counts.players };
+  }
+
+  /** True when this code has no live host, so a new TV can take it. */
+  async claimMint(): Promise<{ ok: boolean }> {
+    if (this.findHost()) return { ok: false };
+    return { ok: true };
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -401,11 +422,67 @@ export class PartyRoom extends DurableObject<Env> {
   }
 }
 
+function corsHeaders(origin: string | null, extra: string): Headers {
+  const headers = new Headers();
+  if (origin && originAllowed(origin, extra)) {
+    headers.set("Access-Control-Allow-Origin", origin);
+    headers.set("Vary", "Origin");
+  }
+  headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  headers.set("Access-Control-Allow-Headers", "Content-Type");
+  return headers;
+}
+
+function jsonResponse(body: unknown, status: number, origin: string | null, extra: string): Response {
+  const headers = corsHeaders(origin, extra);
+  headers.set("Content-Type", "application/json; charset=utf-8");
+  headers.set("Cache-Control", "no-store");
+  return new Response(JSON.stringify(body), { status, headers });
+}
+
+async function allowJoin(request: Request, env: Env): Promise<Response | null> {
+  const ip = request.headers.get("CF-Connecting-IP") || "local";
+  try {
+    const limit = await env.JOIN_LIMIT.limit({ key: ip });
+    if (!limit.success) return new Response("Slow down.", { status: 429 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "rate limit failed";
+    console.log(JSON.stringify({ event: "rate_limit_error", message }));
+  }
+  return null;
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    const origin = request.headers.get("Origin");
+    const extra = env.ALLOWED_ORIGINS || "";
+    if (request.method === "OPTIONS" && (url.pathname === "/rooms" || url.pathname.startsWith("/rooms/"))) {
+      if (origin && !originAllowed(origin, extra)) return new Response("Origin not allowed", { status: 403 });
+      return new Response(null, { status: 204, headers: corsHeaders(origin, extra) });
+    }
     if (request.method === "GET" && (url.pathname === "/" || url.pathname === "/health")) {
       return Response.json({ ok: true, service: "pdg-party-relay" });
+    }
+    if (url.pathname === "/rooms" && request.method === "POST") {
+      if (origin && !originAllowed(origin, extra)) return new Response("Origin not allowed", { status: 403 });
+      const limited = await allowJoin(request, env);
+      if (limited) return limited;
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        const room = mintCode();
+        const claimed = await env.PARTY_ROOM.getByName(room).claimMint();
+        if (claimed.ok) return jsonResponse({ room }, 201, origin, extra);
+      }
+      return jsonResponse({ error: "Could not mint a room." }, 503, origin, extra);
+    }
+    const looked = /^\/rooms\/([A-Za-z0-9]{4})$/.exec(url.pathname);
+    if (looked && request.method === "GET") {
+      if (origin && !originAllowed(origin, extra)) return new Response("Origin not allowed", { status: 403 });
+      const limited = await allowJoin(request, env);
+      if (limited) return limited;
+      const room = (looked[1] || "").toUpperCase();
+      const status = await env.PARTY_ROOM.getByName(room).status();
+      return jsonResponse({ room, host: status.host, players: status.players }, 200, origin, extra);
     }
     if (url.pathname !== "/ws") {
       return new Response("Not found", { status: 404 });
@@ -417,18 +494,11 @@ export default {
     if (request.headers.get("Upgrade") !== "websocket") {
       return new Response("Expected WebSocket", { status: 426 });
     }
-    const origin = request.headers.get("Origin");
-    if (!originAllowed(origin, env.ALLOWED_ORIGINS || "")) {
+    if (!originAllowed(origin, extra)) {
       return new Response("Origin not allowed", { status: 403 });
     }
-    const ip = request.headers.get("CF-Connecting-IP") || "local";
-    try {
-      const limit = await env.JOIN_LIMIT.limit({ key: ip });
-      if (!limit.success) return new Response("Slow down.", { status: 429 });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "rate limit failed";
-      console.log(JSON.stringify({ event: "rate_limit_error", message }));
-    }
+    const limited = await allowJoin(request, env);
+    if (limited) return limited;
     const stub = env.PARTY_ROOM.getByName(room);
     return stub.fetch(request);
   },

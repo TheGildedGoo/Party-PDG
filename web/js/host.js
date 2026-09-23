@@ -161,6 +161,9 @@
     } else {
       next = location.origin + (hostedRelay() ? "/play.html?room=" : "/play?room=") + game.room;
     }
+    if (location.protocol !== "file:" && !hostedRelay() && next.indexOf("relay=") === -1) {
+      next += "&relay=lan";
+    }
     var changed = game.joinUrl !== next || ui.lanUnreachable !== unreachable;
     game.joinUrl = next;
     ui.lanUnreachable = unreachable;
@@ -226,6 +229,18 @@
         error: function (message) {
           ui.error = message || "Room error";
           if (!welcomed && String(message).indexOf("already") !== -1) {
+            if (hostedRelay() && PDG.mintRoom) {
+              PDG.mintRoom().then(function (code) {
+                if (!ui.party) return;
+                game.configureRoom(code);
+                applyJoin();
+                connectHost();
+              }).catch(function () {
+                ui.error = "Room relay is not reachable. Check the network, then try Host a party again.";
+                render();
+              });
+              return;
+            }
             game.configureRoom(PDG.roomCode());
             applyJoin();
             connectHost();
@@ -391,7 +406,7 @@
       return '<div class="chip"><img alt="" src="' + avatarImg(p.avatar) + '"><div><strong>' + PDG.esc(p.name) + '</strong><div class="meta">' + (p.audience ? "Audience" : "Player") + "</div></div></div>";
     }).join("") || '<p class="fine">Waiting for phones. Late join closes when round 1 starts. Cap is 8 players. Audience is uncapped.</p>';
     return '' +
-      '<p class="kicker">Party lobby</p><h2>' + (hostedRelay() ? "Any network. Type the code." : "Same Wi-Fi. Type the code.") + "</h2>" +
+      '<p class="kicker">Party lobby</p><h2>Same Wi-Fi. Type the code.</h2>' +
       '<p class="disclaimer">Unofficial study aid. Not an Air Force product, not a substitute for AFH 1. PFE content is determined solely by the Air Force.</p>' +
       '<div class="grid-2"><div>' +
       '<div class="row">' +
@@ -1042,18 +1057,33 @@
     else if (ui.session && !ui.session.closed) ui.session = null;
     if (ui.mock && !ui.mock.done) ui.mock.pausedAt = Date.now();
     ui.party = true;
-    ui.screen = "lobby";
     ui.notice = "";
     ui.error = "";
     ui.wager = null;
     game.players = game.players.filter(function (p) { return p.id !== "host-seat"; });
-    game.hostLine = hostedRelay()
-      ? "Phones join with the room code. Same Wi-Fi is not required."
-      : "Same Wi-Fi. Phones join with the room code.";
+    game.hostLine = "Same Wi-Fi. Phones join with the room code.";
     game.toLobby();
     game.configure(settings);
-    connectHost();
+    if (hostedRelay() && PDG.mintRoom) {
+      PDG.mintRoom().then(function (code) {
+        if (!ui.party) return;
+        ui.screen = "lobby";
+        game.configureRoom(code);
+        applyJoin();
+        refreshJoin();
+        connectHost();
+        render();
+      }).catch(function () {
+        if (!ui.party) return;
+        ui.screen = "lobby";
+        ui.error = "Room relay is not reachable. Check the network, then try Host a party again.";
+        render();
+      });
+      return;
+    }
+    ui.screen = "lobby";
     refreshJoin();
+    connectHost();
     render();
   }
 

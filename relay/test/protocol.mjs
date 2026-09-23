@@ -112,6 +112,23 @@ async function main() {
     const body = await health.json();
     assert(body.service === "pdg-party-relay", "unexpected health body");
 
+    const minted = await fetch(`${BASE}/rooms`, {
+      method: "POST",
+      headers: { Origin: "https://pdg-play.com" },
+    });
+    assert(minted.status === 201, `mint should be 201, got ${minted.status}`);
+    assert(minted.headers.get("access-control-allow-origin") === "https://pdg-play.com", "mint CORS origin");
+    const mintedBody = await minted.json();
+    assert(/^[A-HJ-NP-Z2-9]{4}$/.test(mintedBody.room), JSON.stringify(mintedBody));
+    const before = await fetch(`${BASE}/rooms/${mintedBody.room}`);
+    const beforeBody = await before.json();
+    assert(before.ok && beforeBody.host === false && beforeBody.players === 0, JSON.stringify(beforeBody));
+    const evilMint = await fetch(`${BASE}/rooms`, {
+      method: "POST",
+      headers: { Origin: "https://evil.example" },
+    });
+    assert(evilMint.status === 403, `evil mint should be 403, got ${evilMint.status}`);
+
     const missing = await fetch(`${BASE}/ws?room=no`);
     assert(missing.status === 400, `bad room should be 400, got ${missing.status}`);
     const denied = await upgradeStatus("/ws?room=ABCD", { Origin: "https://evil.example" });
@@ -127,6 +144,8 @@ async function main() {
     const host = await connect(party);
     const hostWelcome = await hello(host, { role: "host", room: party.toLowerCase() });
     assert(hostWelcome.op === "welcome" && hostWelcome.role === "host" && hostWelcome.room === party, JSON.stringify(hostWelcome));
+    const live = await (await fetch(`${BASE}/rooms/${party}`)).json();
+    assert(live.host === true && live.players === 0 && live.room === party, JSON.stringify(live));
 
     const second = await connect(party);
     const clash = await hello(second, { role: "host", room: party });
