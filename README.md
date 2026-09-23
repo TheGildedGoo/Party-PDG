@@ -1,6 +1,6 @@
 # PDG Party
 
-Unofficial study party for AFH 1, *The Airman* (15 February 2025). One computer is the TV. Phones on the same Wi-Fi are the controllers. It plays like a living-room game: Boards & Brief, a fibbage round, a lightning round, flights versus flights, situational judgment, and a solo study desk.
+Unofficial study party for AFH 1, *The Airman* (15 February 2025). One computer is the TV. Phones on the same Wi-Fi are the controllers. It plays like a living-room game: Boards & Brief, Decoy Brief, a lightning round, flights versus flights, situational judgment, and a solo study desk. Every mode in the bank is multiple choice.
 
 This is **not** an Air Force product, **not** a substitute for AFH 1, and **not** a source the Air Force uses to write the PFE. Promotion-test content is determined solely by the Air Force. Group study for the purpose of enlisted promotion testing is prohibited by DAFMAN 36-2664. Read that again before you put this on a projector at work.
 
@@ -24,7 +24,7 @@ No Python? Double-click `START.html`. That opens Quiet Hours in the browser for 
 
 - **Lobby.** Rank track (E-5, E-6, mixed, or every chapter), round count, Mild or Chief roast, flight count, demo seed.
 - **Boards & Brief.** Multiple choice. Speed adds points. Fastest correct lock gets a bonus.
-- **Fibbage.** Write a believable lie, then vote for the handbook line. You cannot vote for your own lie. Audience votes do not pay the author.
+- **Decoy Brief.** Multiple choice. The handbook line is in the stack with three decoys. Free-text Fibbage prompts are not in the bank. The host screen may still show the old Fibbage button until that mode is rewired; it has no prompts to draw.
 - **Lightning.** Up to 20 items, auto-advance, combo scoring, a short break every five.
 - **Flight vs Flight.** Two or more players, sequential flights. The captain locks. A miss opens a short steal for the next flight.
 - **SJT.** Most effective, then least effective. A swap scores zero.
@@ -39,13 +39,14 @@ On the lobby screen, click **3-minute brief**. That uses the demo seed (core val
 
 ## Counts in this build
 
-- 564 original multiple-choice items
-- 90 Fibbage prompts
-- 34 situational-judgment scenarios
+- 579 original multiple-choice items
+- 108 Decoy Brief packs (three decoys plus the handbook line)
+- 0 free-text Fibbage prompts
+- 46 situational-judgment scenarios
 - 85 Chief and Mild lines, dares, and nicknames
 - 23 competencies on the SJT items (Fosters Inclusion is omitted; AFH 1 section 14E was deleted)
 
-| Chapter | Title | WAPS 2026 | MCQ | Fibbage |
+| Chapter | Title | WAPS 2026 | MCQ | Decoy |
 | --- | --- | --- | ---: | ---: |
 | 1 | Professionalism | E-5 and E-6 | 44 | 11 |
 | 2 | Aviation History | Not tested | 0 | 0 |
@@ -53,26 +54,26 @@ On the lobby screen, click **3-minute brief**. That uses the demo seed (core val
 | 4 | Air and Cyberpower | Not tested | 0 | 0 |
 | 5 | Military Organization and Command | E-5 and E-6 | 48 | 10 |
 | 6 | Doctrine and Joint Force | Not tested | 0 | 0 |
-| 7 | Enlisted Force Development | E-5 and E-6 | 49 | 8 |
+| 7 | Enlisted Force Development | E-5 and E-6 | 53 | 8 |
 | 8 | Assessments and Recognition | E-5 and E-6 | 31 | 3 |
 | 9 | Enlisted Promotions | E-5 and E-6 | 44 | 10 |
 | 10 | Assignments and Occupational Codes | Not tested | 0 | 0 |
-| 11 | Personnel Programs and Benefits | E-5 and E-6 | 34 | 6 |
-| 12 | Finance, Manpower, and Resources | E-5 and E-6 | 33 | 7 |
+| 11 | Personnel Programs and Benefits | E-5 and E-6 | 36 | 6 |
+| 12 | Finance, Manpower, and Resources | E-5 and E-6 | 34 | 7 |
 | 13 | Developing Organizations | E-6 only | 31 | 4 |
 | 14 | Developing Others | E-5 and E-6 | 34 | 6 |
-| 15 | Developing Self | E-5 and E-6 | 36 | 6 |
-| 16 | Developing Ideas | E-6 only | 24 | 3 |
-| 17 | Emergency Management | E-5 and E-6 | 26 | 2 |
-| 18 | Security | E-5 and E-6 | 26 | 4 |
+| 15 | Developing Self | E-5 and E-6 | 39 | 6 |
+| 16 | Developing Ideas | E-6 only | 26 | 3 |
+| 17 | Emergency Management | E-5 and E-6 | 27 | 8 |
+| 18 | Security | E-5 and E-6 | 27 | 4 |
 | 19 | Standards of Conduct | E-5 and E-6 | 26 | 4 |
-| 20 | Enforcing Military Standards | E-5 and E-6 | 26 | 1 |
+| 20 | Enforcing Military Standards | E-5 and E-6 | 26 | 7 |
 | 21 | Military Justice | Not tested | 0 | 0 |
-| 22 | Fitness and Readiness | E-5 and E-6 | 26 | 2 |
+| 22 | Fitness and Readiness | E-5 and E-6 | 26 | 8 |
 | 23 | Dress and Appearance | Not tested | 0 | 0 |
-| 24 | Military Customs and Courtesies | E-5 and E-6 | 26 | 3 |
+| 24 | Military Customs and Courtesies | E-5 and E-6 | 27 | 3 |
 
-Every item is tagged with chapter, section, paragraph or section anchor, page hint, ranks, difficulty, and `sourceEdition` `AFH1-2025`.
+Every item is tagged with `kind` (`mcq`, `decoy`, or `sjt`), chapter, section, paragraph or section anchor, page hint, ranks, difficulty, and `sourceEdition` `AFH1-2025`. `explain` is study copy. `source` is the handbook locator, not a second copy of the explanation. Decoy rows use `cite.paragraph`; MCQ and SJT keep `cite.para`. Shipped items fill both keys with the same anchor. See `web/data/COUNTS.md`.
 
 ## Known gaps
 
@@ -93,6 +94,7 @@ python3 tools/build_assets.py
 python3 tools/import_questions.py path/to/new-items.json
 node tools/test_logic.js
 node tools/test_game.js
+node tools/test_bank.js
 ```
 
 `import_questions.py` replaces items with the same id and rebuilds `web/data/bundle.js`. Details are in `web/data/README.md`.

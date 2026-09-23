@@ -13,6 +13,8 @@ import random
 import re
 from collections import Counter
 
+from bank_schema import locator, validate_item
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "web", "data")
 SRC = os.path.join(ROOT, "tools", "bank_src")
@@ -67,21 +69,30 @@ def pack_mcq(raw: dict, number: int) -> dict:
     flag = raw.get("ranks") or ("e6" if chapter in (13, 16) else "both")
     para = str(raw["para"])
     slug = re.sub(r"[^0-9A-Za-z]+", "", para)[:12]
+    explain = raw["explain"].strip()
+    supplied = (raw.get("source") or "").strip()
+    if supplied and supplied == explain:
+        raise SystemExit("explain duplicates source: " + raw["question"][:80])
+    source = supplied or locator(para, raw["title"])
+    page = int(raw["page"])
     return {
         "id": f"q-{chapter:02d}-{slug}-{number:02d}",
+        "kind": "mcq",
         "type": "mcq",
         "question": raw["question"].strip(),
         "choices": shuffled,
         "answerIndex": answer,
-        "explain": raw["explain"].strip(),
-        "source": raw.get("source", raw["explain"]).strip(),
+        "explain": explain,
+        "source": source,
         "cite": {
             "chapter": chapter,
             "section": raw["sec"],
             "para": para,
+            "paragraph": para,
             "title": raw["title"],
+            "pageHint": str(page),
         },
-        "pageHint": int(raw["page"]),
+        "pageHint": page,
         "ranks": ranks_for(flag, chapter),
         "difficulty": int(raw["diff"]),
         "tags": [t.strip() for t in raw.get("tags", "waps").split(",") if t.strip()],
@@ -90,27 +101,42 @@ def pack_mcq(raw: dict, number: int) -> dict:
     }
 
 
-def pack_fib(raw: dict, number: int) -> dict:
+def pack_decoy(raw: dict, number: int) -> dict:
     chapter = int(raw["ch"])
     flag = raw.get("ranks") or ("e6" if chapter in (13, 16) else "both")
-    para = str(raw["para"])
+    para = str(raw.get("para") or raw.get("paragraph"))
+    decoys = [str(raw["decoys"][0]).strip(), str(raw["decoys"][1]).strip(), str(raw["decoys"][2]).strip()]
+    truth = raw["truth"].strip()
+    explain = raw["explain"].strip()
+    supplied = (raw.get("source") or "").strip()
+    if not supplied or supplied == explain:
+        raise SystemExit("decoy explain must differ from source: " + raw["stem"][:80])
+    page = raw.get("page", raw.get("pageHint"))
+    page_text = str(page)
     return {
-        "id": f"f-{chapter:02d}-{number:02d}",
-        "type": "fibbage",
-        "prompt": raw["prompt"].strip(),
-        "question": raw["prompt"].strip(),
-        "answer": raw["answer"].strip(),
-        "lies": [raw["l1"].strip(), raw["l2"].strip(), raw["l3"].strip()],
-        "choices": [],
-        "answerIndex": 0,
-        "explain": raw["explain"].strip(),
-        "cite": {"chapter": chapter, "section": raw["sec"], "para": para, "title": raw["title"]},
-        "pageHint": int(raw["page"]),
+        "id": f"decoy-ch{chapter:02d}-{number:03d}",
+        "kind": "decoy",
+        "type": "decoy",
+        "stem": raw["stem"].strip(),
+        "question": raw["stem"].strip(),
+        "truth": truth,
+        "decoys": decoys,
+        "explain": explain,
+        "source": supplied,
+        "cite": {
+            "chapter": chapter,
+            "section": raw["sec"],
+            "paragraph": para,
+            "para": para,
+            "title": raw["title"],
+            "pageHint": page_text,
+        },
+        "pageHint": int(page) if str(page).isdigit() else page_text,
         "ranks": ranks_for(flag, chapter),
         "difficulty": int(raw["diff"]),
-        "tags": ["fibbage"],
+        "tags": ["decoy", "waps"] + (["e6"] if flag == "e6" or chapter in (13, 16) else []),
         "sourceEdition": "AFH1-2025",
-        "demo": bool(raw.get("demo")),
+        "demo": False,
     }
 
 
@@ -122,18 +148,34 @@ def pack_sjt(raw: dict, number: int) -> dict:
     shuffled = [actions[i] for i in order]
     chapter = int(raw["ch"])
     flag = "e6" if chapter in (13, 16) else "both"
+    para = str(raw["para"])
+    explain = raw["explain"].strip()
+    supplied = (raw.get("source") or "").strip()
+    if supplied and supplied == explain:
+        raise SystemExit("sjt explain duplicates source: " + raw["scenario"][:80])
+    source = supplied or locator(para, raw["title"])
+    page = int(raw["page"])
     return {
         "id": f"sjt-{number:03d}",
+        "kind": "sjt",
         "type": "sjt",
         "scenario": raw["scenario"].strip(),
         "actions": shuffled,
         "mostIndex": shuffled.index(raw["most"]),
         "leastIndex": shuffled.index(raw["least"]),
-        "explain": raw["explain"].strip(),
+        "explain": explain,
+        "source": source,
         "competency": raw["competency"],
         "category": raw["category"],
-        "cite": {"chapter": chapter, "section": raw["sec"], "para": str(raw["para"]), "title": raw["title"]},
-        "pageHint": int(raw["page"]),
+        "cite": {
+            "chapter": chapter,
+            "section": raw["sec"],
+            "para": para,
+            "paragraph": para,
+            "title": raw["title"],
+            "pageHint": str(page),
+        },
+        "pageHint": page,
         "ranks": ranks_for(flag, chapter),
         "difficulty": int(raw["diff"]),
         "tags": ["sjt", raw["competency"].lower().replace(" ", "-")],
@@ -297,17 +339,100 @@ def lines() -> dict:
     }
 
 
+THIN_SECTIONS = ["7D", "7H", "11C", "11D", "12E", "15D", "15E", "15F", "16A", "17B", "18D", "24F"]
+SINGLE_COMPETENCIES = [
+    "Resilience", "Flexibility", "Decision Making", "Creative Thinking", "Fostering Innovation",
+    "Influence", "Results Focus", "Strategic Thinking", "Resource Management", "Precision",
+    "Information Seeking", "Digital Literacy",
+]
+
+
+def line_card_count(line_bank: dict) -> int:
+    total = sum(len(v.get("mild", [])) + len(v.get("chief", [])) for v in line_bank.values() if isinstance(v, dict))
+    return total + len(line_bank.get("dares", [])) + len(line_bank.get("nicks", []))
+
+
+def write_counts(questions: list, sjts: list, line_bank: dict | None = None) -> str:
+    """Refresh web/data/COUNTS.md from the shipped lists."""
+    mcqs = [q for q in questions if (q.get("kind") or q.get("type")) == "mcq"]
+    decoys = [q for q in questions if (q.get("kind") or q.get("type")) == "decoy"]
+    other = [q for q in questions if (q.get("kind") or q.get("type")) not in ("mcq", "decoy")]
+    mcq_counts = Counter(q["cite"]["chapter"] for q in mcqs)
+    decoy_counts = Counter(q["cite"]["chapter"] for q in decoys)
+    sec_counts = Counter(q["cite"]["section"] for q in mcqs)
+    if line_bank is None:
+        line_path = os.path.join(DATA, "lines.json")
+        if os.path.isfile(line_path):
+            with open(line_path, encoding="utf-8") as handle:
+                line_bank = json.load(handle)
+        else:
+            line_bank = {}
+    report = [
+        "# Bank counts",
+        "",
+        f"- MCQ: {len(mcqs)}",
+        f"- Decoy: {len(decoys)}",
+        f"- SJT: {len(sjts)}",
+        "- Fibbage: 0 (free-text prompts are not shipped)",
+        f"- Chief lines and cards: {line_card_count(line_bank)}",
+        "",
+        "## MCQ and Decoy by chapter",
+    ]
+    for ch in CHAPTERS:
+        report.append(
+            f"- Chapter {ch['chapter']} {ch['title']}: {mcq_counts[ch['chapter']]} MCQ, "
+            f"{decoy_counts[ch['chapter']]} Decoy ({ch['waps']})"
+        )
+    report.extend(["", "## Formerly thin MCQ sections (floor is 3)"])
+    for sec in THIN_SECTIONS:
+        report.append(f"- {sec}: {sec_counts[sec]} MCQ")
+    comps = Counter(s.get("competency", "") for s in sjts)
+    report.extend(["", "## SJT competencies"])
+    for name, count in sorted(comps.items()):
+        report.append(f"- {name}: {count}")
+    if other:
+        report.extend(["", f"- Other question types still in the file: {len(other)}"])
+    report.extend([
+        "",
+        "## Cite keys for Host and rollup",
+        "",
+        "- Every shipped item has `kind` and the same value on `type`: `mcq`, `decoy`, or `sjt`.",
+        "- `kind` is the rollup stamp. `type` stays so existing filters that compare `item.type` still skip Decoy packs when they ask for `mcq`.",
+        "- `cite.chapter` is the chapter number. `cite.section` is the WAPS section code (`7D`, `17B`), the same codes as `chapters.json`.",
+        "- MCQ and SJT keep `cite.para`. Decoy Brief uses the frozen key `cite.paragraph`.",
+        "- Both keys are filled with the same paragraph or section anchor, so a reader can use either.",
+        "- Decoy `cite.pageHint` is a string, matching the frozen shape. MCQ and SJT still keep a top-level numeric `pageHint`, and copy that number onto `cite.pageHint` as a string.",
+        "- `explain` is study teaching copy. `source` is the handbook locator (`AFH 1 (2025) para …`). Those two strings are not the same.",
+        "- `ranks` is `[\"E5\", \"E6\"]` or `[\"E6\"]` for chapters 13 and 16. `sourceEdition` is `AFH1-2025`.",
+        "- Off-WAPS chapters 2, 3, 4, 6, 10, 21, and 23 stay empty.",
+        "- Free-text Fibbage (`prompt` / `answer` / `lies`) is not in `questions.json` or `bundle.js`. Old prompt files are parked in `tools/parked/fibbage/` and are not loaded.",
+        "- Decoy packs are MCQ: `stem`, `truth`, and exactly three `decoys`. `question` repeats `stem` for readers that look for a question string.",
+        "",
+    ])
+    text = "\n".join(report)
+    with open(os.path.join(DATA, "COUNTS.md"), "w", encoding="utf-8") as handle:
+        handle.write(text)
+    return text
+
+
+def _reject(items: list[dict]) -> None:
+    bad = []
+    for item in items:
+        bad.extend(validate_item(item))
+    if bad:
+        raise SystemExit("bank schema failed:\n" + "\n".join(bad[:30]))
+
+
 def main() -> None:
-    from bank_items import FIB, MCQ, SJT  # noqa: WPS433
+    from bank_items import DECOY, MCQ, SJT  # noqa: WPS433
 
     mcq_rows = list(MCQ)
-    fib_rows = list(FIB)
+    decoy_rows = list(DECOY)
     sjt_rows = list(SJT)
     extra = os.path.join(SRC, "extra_mcq.jsonl")
     mcq_rows.extend(load_rows(extra))
 
     questions = []
-    fibs = []
     seen_q = set()
     for i, row in enumerate(mcq_rows, start=1):
         item = pack_mcq(row, i)
@@ -315,10 +440,21 @@ def main() -> None:
             raise SystemExit("duplicate question: " + item["question"][:80])
         seen_q.add(item["question"])
         questions.append(item)
-    for i, row in enumerate(fib_rows, start=1):
-        fibs.append(pack_fib(row, i))
 
-    # Demo seed: first fun items the lobby can isolate.
+    decoys = []
+    per_chapter: Counter = Counter()
+    seen_stem = set()
+    for row in decoy_rows:
+        chapter = int(row["ch"])
+        per_chapter[chapter] += 1
+        item = pack_decoy(row, per_chapter[chapter])
+        stem_key = " ".join(item["stem"].split()).casefold()
+        if stem_key in seen_stem:
+            raise SystemExit("duplicate decoy stem: " + item["stem"][:80])
+        seen_stem.add(stem_key)
+        decoys.append(item)
+
+    # Demo seed stays on MCQ and a few SJT items. Decoy packs are not in the 3-minute brief.
     demo_ids = []
     for item in questions:
         if item.get("demo") and len(demo_ids) < 20:
@@ -330,20 +466,32 @@ def main() -> None:
                 demo_ids.append(item["id"])
             if len(demo_ids) == 20:
                 break
-    for item in fibs:
-        if item.get("demo"):
-            demo_ids.append(item["id"])
 
     sjts = [pack_sjt(row, i) for i, row in enumerate(sjt_rows, start=1)]
     for item in sjts[:4]:
         item["demo"] = True
         demo_ids.append(item["id"])
 
-    combined = questions + fibs
-    counts = Counter(q["cite"]["chapter"] for q in questions)
-    fib_counts = Counter(q["cite"]["chapter"] for q in fibs)
+    payload_q = questions + decoys
+    _reject(payload_q + sjts)
+    if any((q.get("kind") or q.get("type")) == "fibbage" for q in payload_q):
+        raise SystemExit("fibbage item survived the build")
 
-    payload_q = combined
+    sec_counts = Counter(q["cite"]["section"] for q in questions)
+    short = [sec for sec in THIN_SECTIONS if sec_counts[sec] < 3]
+    if short:
+        detail = ", ".join(f"{sec}={sec_counts[sec]}" for sec in short)
+        raise SystemExit("thin MCQ sections remain: " + detail)
+    starved = [ch for ch in (17, 20, 22) if per_chapter[ch] < 6]
+    if starved:
+        raise SystemExit("decoy chapters still thin: " + ", ".join(str(ch) for ch in starved))
+    comps = Counter(s["competency"] for s in sjts)
+    if "Fosters Inclusion" in comps:
+        raise SystemExit("Fosters Inclusion is not a competency in this bank")
+    still_single = [name for name in SINGLE_COMPETENCIES if comps[name] < 2]
+    if still_single:
+        raise SystemExit("SJT competencies still at one scenario: " + ", ".join(still_single))
+
     with open(os.path.join(DATA, "questions.json"), "w", encoding="utf-8") as handle:
         json.dump(payload_q, handle, indent=2, ensure_ascii=False)
         handle.write("\n")
@@ -372,16 +520,9 @@ def main() -> None:
         json.dump(bundle, handle, ensure_ascii=False)
         handle.write(";\n")
 
-    line_count = sum(len(v.get("mild", [])) + len(v.get("chief", [])) for v in line_bank.values() if isinstance(v, dict))
-    line_count += len(line_bank["dares"]) + len(line_bank["nicks"])
-    report = ["# Bank counts", "", f"- MCQ: {len(questions)}", f"- Fibbage: {len(fibs)}", f"- SJT: {len(sjts)}", f"- Chief lines and cards: {line_count}", "", "## MCQ by chapter"]
-    for ch in CHAPTERS:
-        report.append(f"- Chapter {ch['chapter']} {ch['title']}: {counts[ch['chapter']]} MCQ, {fib_counts[ch['chapter']]} Fibbage ({ch['waps']})")
-    text = "\n".join(report) + "\n"
-    with open(os.path.join(DATA, "COUNTS.md"), "w", encoding="utf-8") as handle:
-        handle.write(text)
+    text = write_counts(payload_q, sjts, line_bank)
     print(text)
-    if len(questions) < 250 or len(fibs) < 40 or len(sjts) < 30:
+    if len(questions) < 250 or len(decoys) < 40 or len(sjts) < 30:
         raise SystemExit("bank below the required floor")
 
 

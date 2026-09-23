@@ -3,6 +3,9 @@
 Python modules in tools/items/ carry hand-checked items (including the demo
 seed). tools/bank_src/*.txt is the wider original bank, one record per line,
 fields separated by §. Duplicate prompts are dropped so the demo wording wins.
+
+Free-text Fibbage is not loaded. Decoy Brief rows live in tools/items/decoy.py
+and tools/items/decoy_extra.py. The old Fibbage files are parked and unused.
 """
 from __future__ import annotations
 
@@ -13,7 +16,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
 
-from items.fib import FIB as FIB_PY  # noqa: E402
+from items.decoy import DECOY as DECOY_CONVERTED  # noqa: E402
+from items.decoy_extra import DECOY_EXTRA  # noqa: E402
+from items.mcq_thin import MCQ_THIN  # noqa: E402
 from items.q_a import MCQ as MCQ_A  # noqa: E402
 from items.q_b import MCQ as MCQ_B  # noqa: E402
 from items.q_c import MCQ as MCQ_C  # noqa: E402
@@ -72,52 +77,31 @@ def _mcq_from_src() -> list[dict]:
     return items
 
 
-def _fib_from_src() -> list[dict]:
-    items = []
-    for parts in _rows("fib.txt"):
-        # ch sec para title page ranks diff prompt answer l1 l2 l3 explain lineno
-        if len(parts) < 14:
-            raise SystemExit(f"fib.txt short row ({len(parts)} fields)")
-        items.append({
-            "ch": int(parts[0]),
-            "sec": parts[1],
-            "para": parts[2],
-            "title": parts[3],
-            "page": int(parts[4]),
-            "ranks": parts[5],
-            "diff": int(parts[6]),
-            "prompt": parts[7],
-            "answer": parts[8],
-            "l1": parts[9],
-            "l2": parts[10],
-            "l3": parts[11],
-            "explain": parts[12],
-        })
-    return items
-
-
 def _sjt_from_src() -> list[dict]:
     items = []
-    for parts in _rows("sjt.txt"):
-        # competency category diff scenario most least mid1 mid2 explain ch sec para title page lineno
-        if len(parts) < 15:
-            raise SystemExit(f"sjt.txt short row ({len(parts)} fields)")
-        items.append({
-            "competency": parts[0],
-            "category": parts[1],
-            "diff": int(parts[2]),
-            "scenario": parts[3],
-            "most": parts[4],
-            "least": parts[5],
-            "mid1": parts[6],
-            "mid2": parts[7],
-            "explain": parts[8],
-            "ch": int(parts[9]),
-            "sec": parts[10],
-            "para": parts[11],
-            "title": parts[12],
-            "page": int(parts[13]),
-        })
+    for name in ("sjt.txt", "sjt_extra.txt"):
+        for parts in _rows(name):
+            # competency category diff scenario most least mid1 mid2 explain ch sec para title page [source] lineno
+            if len(parts) < 15:
+                raise SystemExit(f"{name} short row ({len(parts)} fields)")
+            source = parts[14] if len(parts) >= 16 else ""
+            items.append({
+                "competency": parts[0],
+                "category": parts[1],
+                "diff": int(parts[2]),
+                "scenario": parts[3],
+                "most": parts[4],
+                "least": parts[5],
+                "mid1": parts[6],
+                "mid2": parts[7],
+                "explain": parts[8],
+                "ch": int(parts[9]),
+                "sec": parts[10],
+                "para": parts[11],
+                "title": parts[12],
+                "page": int(parts[13]),
+                "source": source,
+            })
     return items
 
 
@@ -134,5 +118,6 @@ def _merge(primary: list[dict], extra: list[dict], field: str) -> list[dict]:
 
 
 MCQ = _merge(list(MCQ_A) + list(MCQ_B) + list(MCQ_C) + list(MCQ_D), _mcq_from_src(), "question")
-FIB = _merge(list(FIB_PY), _fib_from_src(), "prompt")
+MCQ.extend(_merge([], list(MCQ_THIN), "question"))
+DECOY = _merge(list(DECOY_CONVERTED), list(DECOY_EXTRA), "stem")
 SJT = _merge([], _sjt_from_src(), "scenario")
