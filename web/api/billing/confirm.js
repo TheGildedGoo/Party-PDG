@@ -1,5 +1,5 @@
-import { fail } from "../../lib/http.js";
-import { confirmCheckout } from "../../lib/actions/billing.js";
+import { fail } from "../lib/http.js";
+import { confirmCheckout } from "../lib/actions/billing.js";
 
 export async function POST(request) {
   try {
