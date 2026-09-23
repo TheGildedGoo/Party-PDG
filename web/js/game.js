@@ -416,10 +416,15 @@
   };
 
   Game.prototype.privateFor = function (pid) {
-    if (this.subphase !== "vote" || !this.fibOptions) return null;
-    var own = null;
-    this.fibOptions.forEach(function (o) { if (o.authorId === pid) own = o.id; });
-    return { ownOptionId: own };
+    if (this.subphase === "vote" && this.fibOptions) {
+      var ownFib = null;
+      this.fibOptions.forEach(function (o) { if (o.authorId === pid) ownFib = o.id; });
+      return { ownOptionId: ownFib };
+    }
+    if (this.modeId === "decoy" && this.subphase === "vote" && this.decoySponsors) {
+      return { ownOptionId: this.decoySponsors[pid] || null };
+    }
+    return null;
   };
 
   PDG.Game = Game;

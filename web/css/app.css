@@ -329,3 +329,141 @@ body.player .big-title { font-family: var(--display); font-size: 28px; letter-sp
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* Host v1: 16:9 safe area, wager, flights, rollup, toasts. */
+body.host .sky.tv-safe {
+  width: min(100vw, calc(100vh * 16 / 9));
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 3.2vh 4.6vw 2vh;
+  box-sizing: border-box;
+}
+body.host .topbar,
+body.host .scorestrip,
+body.host .stage { padding-left: 0; padding-right: 0; }
+body.host .stage { width: min(1440px, 100%); margin: 0 auto; }
+.room-hero { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.room-code {
+  font-family: var(--display);
+  font-size: clamp(72px, 9vw, 132px);
+  letter-spacing: 0.14em;
+  line-height: 0.9;
+  margin: 0;
+}
+.qr-lg { width: min(420px, 100%); padding: 16px; }
+.join-url { word-break: break-all; font-size: 18px; }
+.wager {
+  border: 1px solid rgba(245, 166, 35, 0.45);
+  border-radius: 18px;
+  padding: 14px;
+  background: rgba(245, 166, 35, 0.08);
+}
+.streak-ribbon, .combo-badge, .steal-banner {
+  font-family: var(--display);
+  letter-spacing: 0.08em;
+  align-self: flex-start;
+}
+.streak-ribbon, .combo-badge {
+  background: var(--amber);
+  color: #1a1203;
+  border-radius: 999px;
+  padding: 4px 14px;
+  font-size: 28px;
+}
+.combo-badge { font-size: clamp(40px, 5vw, 72px); line-height: 1; }
+.steal-banner {
+  background: var(--danger);
+  color: white;
+  border-radius: 14px;
+  padding: 10px 16px;
+  font-size: clamp(28px, 3vw, 42px);
+  animation: stealIn 240ms ease-out;
+}
+.timer { height: 22px; }
+.timer.urgent { animation: pulse 0.7s steps(2, end) infinite; }
+.timer.urgent > span { background: var(--danger); }
+.flights { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.flight {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 14px;
+  background: rgba(0, 0, 0, 0.2);
+  min-height: 160px;
+}
+.flight.on { border-color: var(--amber); box-shadow: inset 0 0 0 2px rgba(245, 166, 35, 0.35); }
+.flight h2 { font-size: clamp(32px, 3vw, 48px); }
+.sjt-board { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.sjt-board > div { border-top: 4px solid var(--amber); padding-top: 8px; }
+.choice.picked { border-color: var(--amber); }
+.slots { display: grid; grid-template-columns: repeat(20, 1fr); gap: 4px; }
+.slots i { display: block; height: 12px; border-radius: 3px; background: rgba(255, 255, 255, 0.16); }
+.slots i.now { background: var(--amber); }
+.slots i.good { background: var(--sage); }
+.slots i.bad { background: var(--danger); }
+.heat-cell.hot { outline: 1px solid var(--danger); }
+.heat-cell.warm { outline: 1px solid var(--amber); }
+.heat-cell.ok { outline: 1px solid var(--sage); }
+.totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+.totals div {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+.totals b { display: block; font-family: var(--display); font-size: 36px; line-height: 1; }
+.totals span, .miss-panel, .rollup h3 { font-size: 16px; }
+.rollup h3, .miss-panel h3 { font-family: var(--display); letter-spacing: 0.08em; font-size: 26px; margin: 8px 0 0; }
+.miss-panel {
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--danger);
+  border-radius: 16px;
+  padding: 12px 14px;
+}
+.toasts {
+  position: fixed;
+  top: 8vh;
+  right: 4vw;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 5;
+  width: min(420px, 86vw);
+}
+.toast {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: #10283a;
+  border: 1px solid var(--amber);
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: var(--shadow);
+  animation: toastIn 220ms ease-out;
+}
+.toast img { width: 36px; height: 36px; filter: invert(1); }
+.toast strong { font-family: var(--display); font-size: 28px; letter-spacing: 0.04em; }
+.toast p { margin: 0; font-size: 16px; }
+.stamp.motion-stamp { animation: stampIn 280ms ease-out; }
+.player-chip.bump .score-num { animation: scorePop 240ms ease-out; }
+.score-num { font-family: var(--display); font-size: 32px; }
+@keyframes stampIn {
+  from { transform: rotate(-8deg) scale(1.35); opacity: 0; }
+  to { transform: rotate(-8deg) scale(1); opacity: 1; }
+}
+@keyframes toastIn {
+  from { transform: translateY(-12px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes scorePop {
+  from { transform: scale(1.2); }
+  to { transform: none; }
+}
+@keyframes stealIn {
+  from { transform: translateY(-8px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes pulse { 50% { opacity: 0.55; } }
+@media (max-width: 980px) {
+  body.host .sky.tv-safe { width: 100%; padding: 12px; }
+  .sjt-board, .flights { grid-template-columns: 1fr; }
+  .room-code { letter-spacing: 0.08em; }
+}

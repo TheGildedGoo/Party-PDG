@@ -23,12 +23,12 @@
         prompt: item.question,
         choices: PDG.choiceView(item),
         hideOnHost: true,
-        hostLine: "Eight seconds. No second chance. Combo dies on a miss."
+        hostLine: "Eight seconds. Combo dies on a miss. Misses land on the weak-chapter heat."
       };
     },
     ingest: function (game, player, act) {
       if (player.audience || act.type !== "choice" || game.answers[player.id]) return;
-      game.answers[player.id] = { choice: act.choice, at: Date.now() };
+      game.answers[player.id] = { choice: act.choice, at: Date.now(), wager: PDG.clampWager(act.wager) };
     },
     complete: function (game) {
       var actives = game.active();
@@ -38,13 +38,29 @@
       var item = game.current;
       var correctId = "c" + item.answerIndex;
       var deltas = {};
+      var grades = {};
       var missed = false;
+      var total = (game.roundSeconds || 8) * 1000;
+      var started = game.deadline - total;
+      var cite = item.cite || {};
       game.active().forEach(function (p) {
         var a = game.answers[p.id];
         var ok = !!(a && a.choice === correctId);
+        var step = (p.combo || 0) + 1;
+        var base = PDG.LIGHTNING_STEP * step;
+        var wagerDelta = PDG.wagerPoints(ok, base, a && a.wager);
         var res = PDG.lightningResult(ok, p.combo || 0);
         p.combo = res.combo;
-        deltas[p.id] = res.points;
+        deltas[p.id] = wagerDelta;
+        grades[p.id] = {
+          correct: ok,
+          latencyMs: a && a.at ? Math.max(0, a.at - started) : total,
+          wager: PDG.clampWager(a && a.wager),
+          wagerDelta: wagerDelta,
+          itemId: item.id,
+          chapter: PDG.chapterOf(item),
+          section: cite.section || ""
+        };
         if (!ok) missed = true;
       });
       if (missed) game.noteChapterMiss(item);
@@ -56,6 +72,7 @@
         cite: item.cite,
         source: item.source || item.explain,
         deltas: deltas,
+        grades: grades,
         bucket: "lightning"
       };
     }

@@ -5,6 +5,7 @@ require("../web/js/modes/fibbage.js");
 require("../web/js/modes/sjt.js");
 require("../web/js/modes/teams.js");
 require("../web/js/modes/hotwash.js");
+require("../web/js/modes/decoy.js");
 require("../web/js/game.js");
 
 const PDG = globalThis.PDG;
@@ -143,6 +144,47 @@ const hot = g.start("hotwash", { keepScore: true });
 if (!hot.ok) throw new Error(hot.reason);
 if (!g.deck.length) throw new Error("hot wash deck empty");
 if (g.players.find((p) => p.id === "p1").score < 0) throw new Error("scores wiped");
+
+bank.decoys = [{
+  id: "decoy-ch09-001",
+  kind: "decoy",
+  stem: "The handbook line is which of these?",
+  truth: "Handbook line",
+  decoys: ["Lie A", "Lie B", "Lie C"],
+  explain: "Study copy",
+  cite: { chapter: 9, section: "9.4", paragraph: "9.4.2", pageHint: "9-12" },
+  ranks: ["E5", "E6"],
+  difficulty: 2,
+  sourceEdition: "AFH1-2025"
+}];
+g = party();
+g.settings.rounds = 1;
+res = g.start("decoy");
+if (!res.ok) throw new Error(res.reason);
+drain(g, 1);
+if (g.subphase !== "sponsor") throw new Error("party decoy should sponsor, got " + g.subphase);
+g.receive("p1", { type: "sponsor", optionId: "d0", wager: 0 });
+g.receive("p2", { type: "sponsor", optionId: "d1", wager: 2 });
+if (g.subphase !== "vote") throw new Error("decoy should be voting");
+g.receive("p1", { type: "decoyvote", optionId: "truth", wager: 0 });
+g.receive("p2", { type: "decoyvote", optionId: "d0", wager: 2 });
+if (g.phase !== "reveal") throw new Error("decoy vote should reveal");
+if (pScore(g, "p1") !== 150) throw new Error("truth 100 plus one fool 50, got " + pScore(g, "p1"));
+if (pScore(g, "p2") !== -200) throw new Error("wrong wager 2 costs 200, got " + pScore(g, "p2"));
+
+g = new PDG.Game(bank);
+g.manual = true;
+g.toLobby();
+g.addPlayer({ id: "solo", name: "You", avatar: "open-book" });
+res = g.start("decoy");
+if (!res.ok) throw new Error(res.reason);
+drain(g, 1);
+if (g.view.kind !== "decoy-pick") throw new Error("solo decoy is a four-line pick");
+if (g.view.choices.length !== 4) throw new Error("solo stack should be 4");
+var truthPick = g.view.choices.find((c) => c.truth);
+g.receive("solo", { type: "choice", choice: truthPick.id, wager: 3 });
+if (g.phase !== "reveal") throw new Error("solo decoy should reveal");
+if (pScore(g, "solo") !== 300) throw new Error("solo wager 3 pays 300, got " + pScore(g, "solo"));
 
 console.log("game ok");
 

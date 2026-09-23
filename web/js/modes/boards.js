@@ -27,7 +27,7 @@
         prompt: item.question,
         choices: PDG.choiceView(item),
         hideOnHost: true,
-        hostLine: "Answers are on the phones. Lock it in."
+        hostLine: game.active().length > 1 ? "Answers are on the phones. Lock a stripe, then the choice." : "Wager a stripe, then lock it on this screen."
       };
     },
     ingest: function (game, player, act) {
@@ -37,7 +37,7 @@
       }
       if (act.type !== "choice" || game.answers[player.id]) return;
       if (game.steal && player.team != null) return;
-      game.answers[player.id] = { choice: act.choice, at: Date.now() };
+      game.answers[player.id] = { choice: act.choice, at: Date.now(), wager: PDG.clampWager(act.wager) };
     },
     complete: function (game) {
       var actives = game.active();
@@ -58,12 +58,28 @@
         }
       });
       var total = (game.roundSeconds || 20) * 1000;
+      var started = game.deadline - total;
+      var party = game.active().length > 1;
       var deltas = {};
+      var grades = {};
+      var cite = item.cite || {};
       game.active().forEach(function (p) {
         var a = game.answers[p.id];
         var ok = !!(a && a.choice === correctId);
         var left = a ? Math.max(0, game.deadline - a.at) : 0;
-        deltas[p.id] = PDG.boardsPoints(!!ok, left, total, p.id === fastest);
+        var speed = 0;
+        if (ok && party) speed = PDG.boardsPoints(true, left, total, p.id === fastest) - 1000;
+        var wagerDelta = PDG.wagerPoints(ok, PDG.BOARDS_BASE, a && a.wager);
+        deltas[p.id] = wagerDelta + speed;
+        grades[p.id] = {
+          correct: ok,
+          latencyMs: a && a.at ? Math.max(0, a.at - started) : total,
+          wager: PDG.clampWager(a && a.wager),
+          wagerDelta: wagerDelta,
+          itemId: item.id,
+          chapter: PDG.chapterOf(item),
+          section: cite.section || ""
+        };
         if (!ok) missed = true;
       });
       if (missed) game.noteChapterMiss(item);
@@ -75,6 +91,7 @@
         cite: item.cite,
         source: item.source || item.explain,
         deltas: deltas,
+        grades: grades,
         bucket: missed ? "wrong" : "correct"
       };
     }

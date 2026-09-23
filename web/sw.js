@@ -1,4 +1,4 @@
-var VERSION = "pdg-party-v4";
+var VERSION = "pdg-party-v5";
 var CORE = [
   "/",
   "/index.html",
@@ -16,7 +16,7 @@ var CORE = [
   "/js/player.js",
   "/js/modes/boards.js",
   "/js/modes/lightning.js",
-  "/js/modes/fibbage.js",
+  "/js/modes/decoy.js",
   "/js/modes/sjt.js",
   "/js/modes/teams.js",
   "/js/modes/hotwash.js",
@@ -25,6 +25,7 @@ var CORE = [
   "/data/sjt.json",
   "/data/lines.json",
   "/data/chapters.json",
+  "/data/decoys.json",
   "/data/demo.json",
   "/assets/barlow-condensed-700.woff2",
   "/assets/source-sans-3-400.woff2",
