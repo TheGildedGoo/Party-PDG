@@ -44,6 +44,25 @@
 
   function localPlay() { return !ui.party; }
 
+  function accountName() {
+    if (!PDG.account || typeof PDG.account.displayName !== "function") return "";
+    return String(PDG.account.displayName() || "").trim().slice(0, 20);
+  }
+
+  function seatName() {
+    return accountName() || "You";
+  }
+
+  function syncSeatName() {
+    if (!game) return;
+    var label = accountName();
+    var name = seatName();
+    game.hostLabel = label;
+    game.players.forEach(function (p) {
+      if (p.id === "host-seat") p.name = name;
+    });
+  }
+
   function wagerMode() {
     return game && (game.modeId === "boards" || game.modeId === "lightning" || game.modeId === "decoy");
   }
@@ -256,6 +275,7 @@
 
   function pushState() {
     if (!link || !game || !ui.party) return;
+    syncSeatName();
     link.sendState(game.playerView(null));
     game.players.forEach(function (p) {
       var priv = game.privateFor(p.id);
@@ -277,6 +297,7 @@
       PDG.account.bindGate();
       return;
     }
+    syncSeatName();
     if (playGate) {
       playGate = false;
       var stayingInDemo = PDG.account && PDG.account.demoOnly && PDG.account.demoOnly();
@@ -401,6 +422,7 @@
       '<p class="kicker">Ready room · AFH 1 study party</p>' +
       "<h1>PDG PARTY</h1>" +
       '<p class="disclaimer">Unofficial study aid. Not an Air Force product, not a substitute for AFH 1, and not a source the Air Force uses to write the PFE. Promotion test content is determined solely by the Air Force. Group study for the purpose of enlisted promotion testing is prohibited by DAFMAN 36-2664.</p>' +
+      '<p class="disclaimer">Party-PDG multiplayer runs offline on a local network with anonymous score competition — no named roster and no shared answer key — so we treat it as competitive practice, not group study under that policy.</p>' +
       "<p>This laptop can run the whole session. Phones and a room code are only for a party.</p>" +
       '<div class="row">' +
       '<button class="btn amber" id="solo" type="button">Quiet Hours</button>' +
@@ -425,9 +447,14 @@
 
   function lobbyHTML() {
     var s = game.settings;
-    var roster = game.players.filter(function (p) { return p.connected !== false && p.id !== "host-seat"; }).map(function (p) {
+    var phones = game.players.filter(function (p) { return p.connected !== false && p.id !== "host-seat"; }).map(function (p) {
       return '<div class="chip"><img alt="" src="' + avatarImg(p.avatar) + '"><div><strong>' + PDG.esc(p.name) + '</strong><div class="meta">' + (p.audience ? "Audience" : "Player") + "</div></div></div>";
-    }).join("") || '<p class="fine">Waiting for phones. Late join closes when round 1 starts. Cap is 8 players. Audience is uncapped.</p>';
+    }).join("");
+    var hostName = accountName();
+    var hostChip = hostName
+      ? '<div class="chip"><img alt="" src="' + avatarImg("open-book") + '"><div><strong>' + PDG.esc(hostName) + '</strong><div class="meta">Host</div></div></div>'
+      : "";
+    var roster = hostChip + (phones || '<p class="fine">Waiting for phones. Late join closes when round 1 starts. Cap is 8 players. Audience is uncapped.</p>');
     return '' +
       '<p class="kicker">Party lobby</p><h2>Same Wi-Fi. Type the code.</h2>' +
       '<p class="disclaimer">Unofficial study aid. Not an Air Force product, not a substitute for AFH 1. PFE content is determined solely by the Air Force.</p>' +
@@ -691,6 +718,7 @@
     }).join("");
     return '<p class="kicker">About</p><h2>Read this before you trust a score.</h2>' +
       '<p class="disclaimer">Unofficial study aid. Not an Air Force product, not a substitute for AFH 1 (15 February 2025), and not how the Air Force writes the PFE. PFE content is determined solely by the Air Force. Group study for the purpose of enlisted promotion testing is prohibited by DAFMAN 36-2664.</p>' +
+      '<p class="disclaimer">Party-PDG multiplayer runs offline on a local network with anonymous score competition — no named roster and no shared answer key — so we treat it as competitive practice, not group study under that policy.</p>' +
       "<p>Every mode is multiple choice. Decoy Brief uses a handbook line and three decoys. There is no free-text lie box.</p>" +
       "<p>Questions are original to this game. They are tagged with chapter, section, paragraph or section anchor, page hint, ranks, difficulty, and sourceEdition AFH1-2025. They are not copied from commercial banks.</p>" +
       "<p>Branding is original: chevron-inspired geometry, not the Air Force seal and not a Hap Arnold wings lockup. Rank pips on the scoreboard are game tokens, not official insignia.</p>" +
@@ -1128,7 +1156,7 @@
     if (ui.session && !ui.session.closed && ui.attempts.length) finalizeSession();
     game.toLobby();
     game.players = [];
-    game.addPlayer({ id: "host-seat", name: "You", avatar: "open-book" });
+    game.addPlayer({ id: "host-seat", name: seatName(), avatar: "open-book" });
     var track = soloTrack();
     game.configure({ rank: track, solo: true });
     var nextOpts = Object.assign({ rank: track }, opts || {});

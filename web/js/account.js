@@ -180,7 +180,8 @@
   }
 
   function disclaimer() {
-    return '<p class="disclaimer">Unofficial study aid. Not an Air Force product, not a substitute for AFH 1, and not a source the Air Force uses to write the PFE. Promotion test content is determined solely by the Air Force. Group study for the purpose of enlisted promotion testing is prohibited by DAFMAN 36-2664.</p>';
+    return '<p class="disclaimer">Unofficial study aid. Not an Air Force product, not a substitute for AFH 1, and not a source the Air Force uses to write the PFE. Promotion test content is determined solely by the Air Force. Group study for the purpose of enlisted promotion testing is prohibited by DAFMAN 36-2664.</p>' +
+      '<p class="disclaimer">Party-PDG multiplayer runs offline on a local network with anonymous score competition — no named roster and no shared answer key — so we treat it as competitive practice, not group study under that policy.</p>';
   }
 
   function note() {
@@ -216,7 +217,9 @@
 
   function registerForm() {
     return authCard("Register", '<form id="register-form" class="stack">' +
-      '<label class="field">Email<input id="reg-email" name="email" type="email" autocomplete="username" required></label>' +
+      '<label class="field">Email<input id="reg-email" name="email" type="email" autocomplete="email" required></label>' +
+      '<label class="field">Username<input id="reg-username" name="username" type="text" autocomplete="username" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_\\-]{3,20}" title="3–20 letters, numbers, underscores, or dashes"></label>' +
+      '<p class="fine">This is the name on the scoreboard. Not your real name.</p>' +
       '<label class="field">Password<input id="reg-password" name="password" type="password" autocomplete="new-password" required></label>' +
       '<label class="field">Confirm password<input name="confirm" type="password" autocomplete="new-password" required></label>' +
       '<label class="field">Discount code (optional)<input id="reg-code" name="code" type="text" value="' + esc(state.promo) + '" autocomplete="off"></label>' +
@@ -228,7 +231,7 @@
 
   function loginForm() {
     return authCard("Log in", '<form id="login-form" class="stack">' +
-      '<label class="field">Email<input name="email" type="email" autocomplete="username" required></label>' +
+      '<label class="field">Email<input name="email" type="email" autocomplete="email" required></label>' +
       '<label class="field">Password<input name="password" type="password" autocomplete="current-password" required></label>' +
       '<button class="btn amber" type="submit">Log in</button></form>' +
       '<button class="btn ghost" id="go-forgot" type="button">Forgot password</button>' +
@@ -238,7 +241,7 @@
 
   function forgotForm() {
     return authCard("Reset password", '<form id="forgot-form" class="stack">' +
-      '<label class="field">Email<input name="email" type="email" autocomplete="username" required></label>' +
+      '<label class="field">Email<input name="email" type="email" autocomplete="email" required></label>' +
       '<button class="btn amber" type="submit">Send reset link</button></form>' +
       '<button class="btn ghost" id="go-login" type="button">Back to log in</button>');
   }
@@ -311,8 +314,10 @@
   function statusLine() {
     var user = state.user || {};
     var ent = entitlement();
-    return "<p>Signed in as <strong>" + esc(user.email) + "</strong> · " + esc(user.role || "user") +
-      " · plan " + esc(user.subscriptionStatus || "none") + " · " + esc(ent.reason || "") + "</p>";
+    var who = user.username || "No username yet";
+    return "<p>Signed in as <strong>" + esc(who) + "</strong> · " + esc(user.role || "user") +
+      " · plan " + esc(user.subscriptionStatus || "none") + " · " + esc(ent.reason || "") + "</p>" +
+      "<p class='fine'>" + esc(user.email || "") + "</p>";
   }
 
   function settingsHTML() {
@@ -320,6 +325,10 @@
       '<div class="row"><button class="btn" id="portal-btn" type="button">Manage billing</button>' +
       '<button class="btn amber" id="subscribe-again" type="button">Subscribe</button>' +
       '<button class="btn ghost" id="panel-close" type="button">Back to play</button></div>' +
+      '<form id="username-form" class="stack"><h3>Username</h3>' +
+      '<label class="field">Username<input name="username" type="text" autocomplete="username" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_\\-]{3,20}" title="3–20 letters, numbers, underscores, or dashes" value="' + esc((state.user && state.user.username) || "") + '"></label>' +
+      '<p class="fine">Scoreboards use this name. 3–20 letters, numbers, underscores, or dashes.</p>' +
+      '<button class="btn" type="submit">Save username</button></form>' +
       '<form id="password-form" class="stack"><h3>Change password</h3>' +
       '<label class="field">Current<input name="current" type="password" autocomplete="current-password" required></label>' +
       '<label class="field">New<input name="next" type="password" autocomplete="new-password" required></label>' +
@@ -331,10 +340,10 @@
   function usersTable() {
     var rows = (state.admin && state.admin.users) || [];
     if (!rows.length) return "<p>No accounts yet.</p>";
-    return '<div class="table-wrap"><table class="admin-table"><thead><tr><th>Email</th><th>Verified</th><th>Plan</th><th>Role</th><th></th></tr></thead><tbody>' +
+    return '<div class="table-wrap"><table class="admin-table"><thead><tr><th>Username</th><th>Email</th><th>Verified</th><th>Plan</th><th>Role</th><th></th></tr></thead><tbody>' +
       rows.map(function (user) {
         var mine = state.user && user.id === state.user.id;
-        return "<tr><td>" + esc(user.email) + "</td><td>" + (user.emailVerifiedAt ? "Yes" : "No") + "</td><td>" +
+        return "<tr><td>" + esc(user.username || "—") + "</td><td>" + esc(user.email) + "</td><td>" + (user.emailVerifiedAt ? "Yes" : "No") + "</td><td>" +
           esc(user.subscriptionStatus || "none") + (user.trialEndsAt ? "<div class='fine'>trial " + esc(String(user.trialEndsAt).slice(0, 10)) + "</div>" : "") +
           "</td><td>" + esc(user.role) + (user.disabledAt ? " · disabled" : "") + "</td><td>" +
           (mine ? "<span class='fine'>you</span>" : (
@@ -403,7 +412,7 @@
         '<button class="icon-btn" id="auth-login" type="button">Log in</button>' +
         '<button class="icon-btn" id="auth-register" type="button">Register</button>';
     }
-    var html = "";
+    var html = state.user && state.user.username ? '<span class="who">' + esc(state.user.username) + "</span>" : "";
     if (state.user && state.user.role === "admin") html += '<button class="icon-btn" id="admin-open" type="button">Admin</button>';
     html += '<button class="icon-btn" id="account-open" type="button">Account</button>';
     html += '<button class="icon-btn" id="logout-btn" type="button">Log out</button>';
@@ -532,7 +541,7 @@
       var data = new FormData(register);
       rememberPromo(data.get("code"));
       var created = api("/api/auth/register", { method: "POST", body: {
-        email: data.get("email"), password: data.get("password"), confirm: data.get("confirm")
+        email: data.get("email"), username: data.get("username"), password: data.get("password"), confirm: data.get("confirm")
       } });
       created.then(function (res) {
         state.notice = res.emailSent ? "Account created. Check your email." : "Account created, but the verification email did not send. Use Resend on the next screen.";
@@ -563,6 +572,16 @@
       var data = new FormData(reset);
       api("/api/auth/reset", { method: "POST", body: { token: state.resetToken, password: data.get("password"), confirm: data.get("confirm") } })
         .then(function (res) { state.resetToken = ""; setUser(res.user); }).catch(catchErr);
+    });
+    var username = document.getElementById("username-form");
+    if (username) username.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var data = new FormData(username);
+      api("/api/auth/username", { method: "POST", body: { username: data.get("username") } }).then(function (res) {
+        state.notice = "Username saved.";
+        state.error = "";
+        setUser(res.user);
+      }).catch(catchErr);
     });
     var password = document.getElementById("password-form");
     if (password) password.addEventListener("submit", function (ev) {
@@ -630,8 +649,12 @@
     blocksPlay: blocksPlay,
     demoOnly: demoOnly,
     saas: false,
+    displayName: function () {
+      return (state.user && state.user.username) || "";
+    },
     viewKey: function () {
-      return [gate(), state.panel, state.adminTab, state.guest ? "g" : "", state.preview ? "p" : "", state.error, state.notice, state.admin && state.admin.loading ? "1" : "0"].join("|");
+      var name = state.user && state.user.username ? state.user.username : "";
+      return [gate(), state.panel, state.adminTab, state.guest ? "g" : "", state.preview ? "p" : "", state.error, state.notice, name, state.admin && state.admin.loading ? "1" : "0"].join("|");
     },
     renderGate: renderGate,
     bindGate: bindShared,

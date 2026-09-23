@@ -1,10 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { entitlement } from "../web/api/lib/entitlement.js";
 import { planCoupon, checkoutOptions, plainCheckoutOptions, dollarsToCents, codeError, normalizeCode } from "../web/api/lib/coupon-plan.js";
 import { promotionCodeIdFromSession, subscriptionIdFromInvoice, periodEndSeconds } from "../web/api/lib/billing-shape.js";
-import { passwordError, hashPassword, verifyPassword } from "../web/api/lib/passwords.js";
+import { passwordError, hashPassword, verifyPassword, usernameError, normalizeUsername, usernameConflict } from "../web/api/lib/passwords.js";
 
 const require = createRequire(import.meta.url);
 const { mergeSnapshots } = require("../web/js/progress-merge.js");
@@ -102,6 +103,48 @@ test("progress merge keeps both devices and the newer session", () => {
   assert.equal(merged.achievements.unlocked["queue-zero"], 8);
   assert.equal(merged.focus.weakChapters[0].chapter, 9);
   assert.equal(merged.lastSession.endedAt, "2026-02-01T00:00:00.000Z");
+});
+
+test("usernames are 3–20 letters, numbers, underscores, or dashes", () => {
+  const bad = "Use 3–20 letters, numbers, underscores, or dashes.";
+  assert.equal(usernameError("ab"), bad);
+  assert.equal(usernameError("a".repeat(21)), bad);
+  assert.equal(usernameError("has space"), bad);
+  assert.equal(usernameError("ok.name"), bad);
+  assert.equal(usernameError("mail@host"), bad);
+  assert.equal(usernameError(""), bad);
+  assert.equal(usernameError("nalyd"), null);
+  assert.equal(usernameError("Airman_01-a"), null);
+  assert.equal(normalizeUsername("  Nalyd "), "Nalyd");
+});
+
+test("usernames are unique ignoring case", () => {
+  const rows = [{ id: "1", username: "Nalyd", deletedAt: null }];
+  assert.equal(usernameConflict("nalyd", rows, "2"), true);
+  assert.equal(usernameConflict("NALYD", rows, "2"), true);
+  assert.equal(usernameConflict("  nalyd  ", rows, "2"), true);
+  assert.equal(usernameConflict("nalyd", rows, "1"), false);
+  assert.equal(usernameConflict("other_name", rows, "2"), false);
+  assert.equal(usernameConflict("nalyd", [{ id: "1", username: "Nalyd", deletedAt: "2026-01-02" }], "2"), false);
+  assert.equal(usernameConflict("admin", [], "2"), false);
+});
+
+test("the DAFMAN line is followed by the competitive-practice note", () => {
+  const line = "Group study for the purpose of enlisted promotion testing is prohibited by DAFMAN 36-2664.";
+  const blurb = "competitive practice, not group study under that policy";
+  for (const file of ["web/js/account.js", "web/js/host.js", "README.md"]) {
+    const text = readFileSync(new URL("../" + file, import.meta.url), "utf8");
+    let from = 0;
+    let found = 0;
+    while (from < text.length) {
+      const at = text.indexOf(line, from);
+      if (at === -1) break;
+      found += 1;
+      assert.match(text.slice(at, at + line.length + 360), new RegExp(blurb));
+      from = at + line.length;
+    }
+    assert.ok(found > 0, file);
+  }
 });
 
 test("bootstrap password shape is accepted and verified", async () => {

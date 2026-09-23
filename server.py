@@ -733,7 +733,7 @@ def accept_ws(conn: socket.socket, headers: dict[str, str], first_path: str) -> 
                     "op": "joined",
                     "player": {
                         "id": client_id,
-                        "name": str(hello.get("name") or "Airman")[:18],
+                        "name": str(hello.get("name") or "Airman")[:20],
                         "avatar": str(hello.get("avatar") or "open-book")[:40],
                         "audience": asked == "audience",
                     },

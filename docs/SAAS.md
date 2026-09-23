@@ -36,7 +36,9 @@ Verification and password-reset sends use idempotency keys (`verify-email/<token
 
 Vercel Postgres is sunset. Use Neon from the Marketplace so `DATABASE_URL` is injected into `pdg-play`. Tables are created on the first API request (`CREATE TABLE IF NOT EXISTS` in `web/api/lib/db.js`). No separate migration command.
 
-The admin seed runs in that same step when `ADMIN_BOOTSTRAP_PASSWORD` is set and `nalyd0206@gmail.com` does not already exist. The row is `role=admin`, email already verified, `must_change_password=true`.
+The admin seed runs in that same step when `ADMIN_BOOTSTRAP_PASSWORD` is set and `nalyd0206@gmail.com` does not already exist. The row is `role=admin`, email already verified, `must_change_password=true`, username `nalyd` (`admin` if `nalyd` is already taken). An existing admin row is not given a new password. If that row has no username yet, the same seed fills `nalyd` or `admin`.
+
+`users.username` is created with the table and added on older databases with `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`. Uniqueness is case-insensitive (`lower(username)` where the account is not deleted). Register requires 3–20 letters, numbers, underscores, or dashes. Account settings can change it later. The scoreboard uses that username, not the email.
 
 ## Stripe price
 
@@ -101,12 +103,12 @@ The admin list shows tracked redemptions (email and whether a comp was revoked).
 ## Play flow
 
 1. Logged-out visitors on Vercel see the splash: overview, feature list, **Register now**, **Log in**, **Try demo**.
-2. Register sends a 24-hour verification link. Play is blocked until the link is opened.
+2. Register asks for an email, a username, and a password, then sends a 24-hour verification link. Play is blocked until the link is opened.
 3. After verify, **Subscribe** opens Checkout (30-day trial, or a discount code).
 4. An active trial or subscription lands on the existing ready room (Quiet Hours / Host a party).
 5. **Try demo** is guest Quiet Hours on the demo items only. It does not sync progress. Hosting a room and the mock PFE stay locked.
-6. Account settings can change the password, open the Customer Portal, or delete the account.
-7. **Admin** is visible only for `role=admin` after the forced password change. It lists users (email, verified, plan, disable/delete) and discount codes.
+6. Account settings can change the username and password, open the Customer Portal, or delete the account.
+7. **Admin** is visible only for `role=admin` after the forced password change. It lists users (username, email, verified, plan, disable/delete) and discount codes.
 
 Progress (spaced-repetition box, achievements, focus rollup, last session) is stored on the account. `localStorage` is still written first and treated as a cache. Sync merges by taking the stronger card, the union of study days, and the newer session rollup.
 
@@ -122,7 +124,8 @@ node tools/test_bank.js
 ## Manual checklist
 
 - [ ] Splash shows for a logged-out visit on the Vercel URL. Python/`file://` still opens the old flow.
-- [ ] Register sends mail from `RESEND_FROM`. Unverified accounts cannot start a real session.
+- [ ] Register requires a unique username and sends mail from `RESEND_FROM`. Unverified accounts cannot start a real session.
+- [ ] The username, not the email, is the name on the host lobby and on a phone that joins while logged in.
 - [ ] Verify link logs the user in and shows Subscribe.
 - [ ] Checkout uses the $1 price and a 30-day trial. Webhook or the return URL marks the user `trialing`.
 - [ ] Customer Portal can cancel and update the card. After cancel, play shows Subscribe.

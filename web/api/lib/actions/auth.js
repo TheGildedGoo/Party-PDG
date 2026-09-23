@@ -2,10 +2,26 @@ import { getSql, ready, mapUser, hitLimit } from "../db.js";
 import { json, readJson, httpError, assertSameOrigin, appOrigin, clientIp } from "../http.js";
 import {
   passwordError, emailError, normalizeEmail, hashPassword, verifyPassword, sha256, newToken,
+  usernameError, normalizeUsername, usernameConflict,
 } from "../passwords.js";
 import { openSession, clearSessions, currentUser, requireUser, sessionPayload, clearSessionCookie } from "../session.js";
 import { sendMail, verificationMessage, resetMessage } from "../mail.js";
 import { cancelSubscriptionIfAny } from "./billing.js";
+
+function uniqueViolation(err) {
+  return /duplicate|unique/i.test(String(err && err.message));
+}
+
+async function assertUsernameFree(sql, username, exceptId) {
+  const key = normalizeUsername(username).toLowerCase();
+  const rows = await sql`SELECT id, username, deleted_at FROM users WHERE lower(username) = ${key}`;
+  const taken = usernameConflict(username, rows.map((row) => ({
+    id: row.id,
+    username: row.username,
+    deletedAt: row.deleted_at,
+  })), exceptId || "");
+  if (taken) throw httpError(409, "That username is taken.");
+}
 
 async function issueToken(sql, userId, purpose, hours) {
   const token = newToken();
@@ -25,6 +41,9 @@ export async function registerUser(request) {
   const badPassword = passwordError(body.password);
   if (badPassword) throw httpError(400, badPassword);
   if (body.password !== body.confirm) throw httpError(400, "Those passwords do not match.");
+  const username = normalizeUsername(body.username);
+  const badUsername = usernameError(username);
+  if (badUsername) throw httpError(400, badUsername);
   const sql = getSql();
   await ready();
   if (await hitLimit(`register:${clientIp(request)}`, 8, 3600)) {
@@ -32,9 +51,16 @@ export async function registerUser(request) {
   }
   const existing = await sql`SELECT id FROM users WHERE email = ${email} AND deleted_at IS NULL LIMIT 1`;
   if (existing.length) throw httpError(409, "An account with that email already exists.");
+  await assertUsernameFree(sql, username);
   const id = crypto.randomUUID();
   const hash = await hashPassword(body.password);
-  await sql`INSERT INTO users (id, email, password_hash) VALUES (${id}, ${email}, ${hash})`;
+  try {
+    await sql`INSERT INTO users (id, email, password_hash, username) VALUES (${id}, ${email}, ${hash}, ${username})`;
+  } catch (err) {
+    if (!uniqueViolation(err)) throw err;
+    const detail = String(err && err.message);
+    throw httpError(409, /username/i.test(detail) ? "That username is taken." : "An account with that email already exists.");
+  }
   const issued = await issueToken(sql, id, "verify", 24);
   let emailSent = true;
   try {
@@ -164,6 +190,25 @@ export async function resetPassword(request) {
   return json(sessionPayload(user), 200, [cookie]);
 }
 
+export async function changeUsername(request) {
+  assertSameOrigin(request);
+  const user = await requireUser(request);
+  const body = await readJson(request);
+  const username = normalizeUsername(body.username);
+  const badUsername = usernameError(username);
+  if (badUsername) throw httpError(400, badUsername);
+  const sql = getSql();
+  await assertUsernameFree(sql, username, user.id);
+  try {
+    await sql`UPDATE users SET username = ${username}, updated_at = NOW() WHERE id = ${user.id}`;
+  } catch (err) {
+    if (!uniqueViolation(err)) throw err;
+    throw httpError(409, "That username is taken.");
+  }
+  const fresh = mapUser((await sql`SELECT * FROM users WHERE id = ${user.id}`)[0]);
+  return json(sessionPayload(fresh));
+}
+
 export async function changePassword(request) {
   assertSameOrigin(request);
   const user = await requireUser(request);
@@ -204,6 +249,7 @@ export async function wipeUser(userId) {
   await sql`DELETE FROM progress WHERE user_id = ${userId}`;
   await sql`UPDATE users SET
     email = ${anon},
+    username = NULL,
     password_hash = 'deleted',
     deleted_at = NOW(),
     disabled_at = COALESCE(disabled_at, NOW()),

@@ -528,3 +528,9 @@ body.host .stage { width: min(1440px, 100%); margin: 0 auto; }
 }
 .danger-box { border-left: 6px solid var(--danger); }
 .top-actions { justify-content: flex-end; }
+.who {
+  font-family: var(--display);
+  letter-spacing: 0.04em;
+  font-size: 22px;
+  line-height: 1;
+}

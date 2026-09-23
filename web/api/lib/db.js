@@ -26,6 +26,7 @@ const STATEMENTS = [
     subscription_status TEXT,
     trial_ends_at TIMESTAMPTZ,
     current_period_end TIMESTAMPTZ,
+    username TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
@@ -92,6 +93,8 @@ const STATEMENTS = [
     revoked_at TIMESTAMPTZ,
     UNIQUE (code_id, user_id)
   )`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS users_username_lower_idx ON users (lower(username)) WHERE deleted_at IS NULL`,
 ];
 
 export function mapUser(row) {
@@ -110,8 +113,20 @@ export function mapUser(row) {
     subscriptionStatus: row.subscription_status,
     trialEndsAt: row.trial_ends_at,
     currentPeriodEnd: row.current_period_end,
+    username: row.username || null,
     createdAt: row.created_at,
   };
+}
+
+const ADMIN_USERNAMES = ["nalyd", "admin"];
+
+async function freeAdminUsername(sql, userId) {
+  for (const name of ADMIN_USERNAMES) {
+    const rows = await sql`SELECT id FROM users
+      WHERE lower(username) = ${name} AND deleted_at IS NULL AND id <> ${userId} LIMIT 1`;
+    if (!rows.length) return name;
+  }
+  return null;
 }
 
 async function seedAdmin(sql) {
@@ -120,16 +135,34 @@ async function seedAdmin(sql) {
     console.error("ADMIN_BOOTSTRAP_PASSWORD is not set; admin seed skipped.");
     return;
   }
-  const existing = await sql`SELECT id FROM users WHERE email = ${ADMIN_EMAIL} LIMIT 1`;
-  if (existing.length) return;
+  const existing = await sql`SELECT id, username FROM users WHERE email = ${ADMIN_EMAIL} LIMIT 1`;
+  if (existing.length) {
+    if (!existing[0].username) {
+      const name = await freeAdminUsername(sql, existing[0].id);
+      if (name) {
+        await sql`UPDATE users SET username = ${name}, updated_at = NOW()
+          WHERE id = ${existing[0].id} AND (username IS NULL OR username = '')`;
+      }
+    }
+    return;
+  }
   const hash = await hashPassword(password);
   const id = crypto.randomUUID();
+  const name = await freeAdminUsername(sql, id);
   try {
-    await sql`INSERT INTO users (
-      id, email, password_hash, role, email_verified_at, must_change_password
-    ) VALUES (
-      ${id}, ${ADMIN_EMAIL}, ${hash}, 'admin', NOW(), TRUE
-    )`;
+    if (name) {
+      await sql`INSERT INTO users (
+        id, email, password_hash, role, email_verified_at, must_change_password, username
+      ) VALUES (
+        ${id}, ${ADMIN_EMAIL}, ${hash}, 'admin', NOW(), TRUE, ${name}
+      )`;
+    } else {
+      await sql`INSERT INTO users (
+        id, email, password_hash, role, email_verified_at, must_change_password
+      ) VALUES (
+        ${id}, ${ADMIN_EMAIL}, ${hash}, 'admin', NOW(), TRUE
+      )`;
+    }
   } catch (err) {
     if (!/duplicate|unique/i.test(String(err && err.message))) throw err;
   }
