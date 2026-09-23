@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" role="img" aria-label="Game token E-5">
+<rect x="8" y="8" width="64" height="64" rx="8" fill="#0b1c2c" stroke="#f4f7fb" stroke-width="2"/>
+<circle cx="16" cy="28" r="4" fill="#f5a623"/><circle cx="32" cy="28" r="4" fill="#f5a623"/><circle cx="48" cy="28" r="4" fill="#f5a623"/><circle cx="16" cy="42" r="4" fill="#f5a623"/><circle cx="32" cy="42" r="4" fill="#f5a623"/>
+<text x="40" y="72" text-anchor="middle" fill="#8fbf9f" font-size="10" font-family="Arial">E-5</text>
+</svg>

@@ -1,2 +1,102 @@
-# Party-PDG
-Interactive game for Air Force E-5 &amp; E-6 PDG testing that mimics the style of games like Jack Box, Fibbage, etc. 
+# PDG Party
+
+Unofficial study party for AFH 1, *The Airman* (15 February 2025). One computer is the TV. Phones on the same Wi-Fi are the controllers. It plays like a living-room game: Boards & Brief, a fibbage round, a lightning round, flights versus flights, situational judgment, and a solo study desk.
+
+This is **not** an Air Force product, **not** a substitute for AFH 1, and **not** a source the Air Force uses to write the PFE. Promotion-test content is determined solely by the Air Force. Group study for the purpose of enlisted promotion testing is prohibited by DAFMAN 36-2664. Read that again before you put this on a projector at work.
+
+Questions are original to this project. The handbook is the factual base. Wording is not taken from commercial quiz banks.
+
+## Start a room
+
+You need Python 3. Nothing to `pip install`.
+
+1. Mac: double-click `start.command`. Windows: double-click `start.bat`. Linux: double-click `start.sh` or run `./start.sh`.
+2. Leave the terminal window open. The host screen opens at `http://127.0.0.1:8741/`.
+3. Click **Host a room**.
+4. Phones join the link printed in that window (and shown as a QR code on the TV). They type the 4-character room code and a callsign.
+5. Click **3-minute brief** for a short Boards & Brief, or pick any mode.
+
+The server listens on `0.0.0.0:8741`. Same Wi-Fi is required. A guest network that blocks phone-to-computer traffic will not work.
+
+No Python? Double-click `START.html`. That opens Quiet Hours in the browser for one person. Phones cannot join a file opened that way.
+
+## What you can play
+
+- **Lobby.** Rank track (E-5, E-6, mixed, or every chapter), round count, Mild or Chief roast, flight count, demo seed.
+- **Boards & Brief.** Multiple choice. Speed adds points. Fastest correct lock gets a bonus.
+- **Fibbage.** Write a believable lie, then vote for the handbook line. You cannot vote for your own lie. Audience votes do not pay the author.
+- **Lightning.** Up to 20 items, auto-advance, combo scoring, a short break every five.
+- **Flight vs Flight.** Two or more players, sequential flights. The captain locks. A miss opens a short steal for the next flight.
+- **SJT.** Most effective, then least effective. A swap scores zero.
+- **Hot Wash.** After a game, replay chapters the room missed.
+- **Quiet Hours.** Solo drills with a light SM-2 schedule, export and import of progress, and a mock PFE: 60 knowledge items plus 20 SJT when the track has them, 80 slots, 1.25 points each.
+
+Late join is allowed until round 1 starts. After that, new phones are audience. Eight players can score. Audience is uncapped.
+
+## First three minutes
+
+On the lobby screen, click **3-minute brief**. That uses the demo seed (core values, the chain of command, ALS, leave, and a few other short items) instead of the full bank. Chief Hot Wash talks after each reveal. Mild is the default roast. Switch to Chief if the room can take it.
+
+## Counts in this build
+
+- 564 original multiple-choice items
+- 90 Fibbage prompts
+- 34 situational-judgment scenarios
+- 85 Chief and Mild lines, dares, and nicknames
+- 23 competencies on the SJT items (Fosters Inclusion is omitted; AFH 1 section 14E was deleted)
+
+| Chapter | Title | WAPS 2026 | MCQ | Fibbage |
+| --- | --- | --- | ---: | ---: |
+| 1 | Professionalism | E-5 and E-6 | 44 | 11 |
+| 2 | Aviation History | Not tested | 0 | 0 |
+| 3 | USAF Heritage | Not tested | 0 | 0 |
+| 4 | Air and Cyberpower | Not tested | 0 | 0 |
+| 5 | Military Organization and Command | E-5 and E-6 | 48 | 10 |
+| 6 | Doctrine and Joint Force | Not tested | 0 | 0 |
+| 7 | Enlisted Force Development | E-5 and E-6 | 49 | 8 |
+| 8 | Assessments and Recognition | E-5 and E-6 | 31 | 3 |
+| 9 | Enlisted Promotions | E-5 and E-6 | 44 | 10 |
+| 10 | Assignments and Occupational Codes | Not tested | 0 | 0 |
+| 11 | Personnel Programs and Benefits | E-5 and E-6 | 34 | 6 |
+| 12 | Finance, Manpower, and Resources | E-5 and E-6 | 33 | 7 |
+| 13 | Developing Organizations | E-6 only | 31 | 4 |
+| 14 | Developing Others | E-5 and E-6 | 34 | 6 |
+| 15 | Developing Self | E-5 and E-6 | 36 | 6 |
+| 16 | Developing Ideas | E-6 only | 24 | 3 |
+| 17 | Emergency Management | E-5 and E-6 | 26 | 2 |
+| 18 | Security | E-5 and E-6 | 26 | 4 |
+| 19 | Standards of Conduct | E-5 and E-6 | 26 | 4 |
+| 20 | Enforcing Military Standards | E-5 and E-6 | 26 | 1 |
+| 21 | Military Justice | Not tested | 0 | 0 |
+| 22 | Fitness and Readiness | E-5 and E-6 | 26 | 2 |
+| 23 | Dress and Appearance | Not tested | 0 | 0 |
+| 24 | Military Customs and Courtesies | E-5 and E-6 | 26 | 3 |
+
+Every item is tagged with chapter, section, paragraph or section anchor, page hint, ranks, difficulty, and `sourceEdition` `AFH1-2025`.
+
+## Known gaps
+
+- This is a study bank, not the secure WAPS item pool and not an SKT.
+- 2026 untested chapters (2, 3, 4, 6, 10, 21, 23) are in the chapter map and are not in the question bank.
+- Chapters 13 and 16 are tagged E-6 only.
+- Paragraph numbers for chapters 16 through 24 are section anchors such as `17F`. The text extract used while writing those items stopped before the body of those chapters, so those items stay at section level.
+- AFH 1 paragraph 9.16 still says the study reference is published as the EPRRC on 1 October. The current catalog name is the WAPS catalog. The date in the handbook is what the items teach.
+- Numeric fitness scores are left out on purpose. They change.
+- Illustrations are original drawings. There is no Air Force seal and no Hap Arnold trademark lockup. Rank marks in the game are tokens, not official insignia.
+- After the first visit through the launcher, the service worker can reopen the host and player pages offline. A room still needs the launcher running if phones are joining.
+
+## Rebuild
+
+```bash
+python3 tools/build_bank.py
+python3 tools/build_assets.py
+python3 tools/import_questions.py path/to/new-items.json
+node tools/test_logic.js
+node tools/test_game.js
+```
+
+`import_questions.py` replaces items with the same id and rebuilds `web/data/bundle.js`. Details are in `web/data/README.md`.
+
+## License
+
+Code is GPL-3. See `LICENSE`. Fonts are SIL Open Font License (`web/assets/OFL.txt` and `web/assets/OFL-source-sans-3.txt`). QR code is MIT. Icons are ISC. See `web/assets/THIRD_PARTY.md`.

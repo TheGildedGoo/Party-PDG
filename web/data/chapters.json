@@ -1,0 +1,297 @@
+[
+  {
+    "chapter": 1,
+    "title": "Professionalism",
+    "page": 18,
+    "waps": "both",
+    "sections": [
+      "1A",
+      "1B",
+      "1C",
+      "1D"
+    ]
+  },
+  {
+    "chapter": 2,
+    "title": "Aviation History",
+    "page": 27,
+    "waps": "off",
+    "sections": [
+      "2A",
+      "2B",
+      "2C",
+      "2D"
+    ]
+  },
+  {
+    "chapter": 3,
+    "title": "USAF Heritage",
+    "page": 48,
+    "waps": "off",
+    "sections": [
+      "3A",
+      "3B",
+      "3C"
+    ]
+  },
+  {
+    "chapter": 4,
+    "title": "Air and Cyberpower",
+    "page": 74,
+    "waps": "off",
+    "sections": [
+      "4A",
+      "4B",
+      "4C"
+    ]
+  },
+  {
+    "chapter": 5,
+    "title": "Military Organization and Command",
+    "page": 89,
+    "waps": "both",
+    "sections": [
+      "5A",
+      "5B",
+      "5C",
+      "5D",
+      "5E"
+    ]
+  },
+  {
+    "chapter": 6,
+    "title": "Doctrine and Joint Force",
+    "page": 109,
+    "waps": "off",
+    "sections": [
+      "6A",
+      "6B",
+      "6C"
+    ]
+  },
+  {
+    "chapter": 7,
+    "title": "Enlisted Force Development",
+    "page": 125,
+    "waps": "both",
+    "sections": [
+      "7A",
+      "7B",
+      "7C",
+      "7D",
+      "7E",
+      "7F",
+      "7G",
+      "7H"
+    ]
+  },
+  {
+    "chapter": 8,
+    "title": "Assessments and Recognition",
+    "page": 152,
+    "waps": "both",
+    "sections": [
+      "8A",
+      "8B",
+      "8C",
+      "8D"
+    ]
+  },
+  {
+    "chapter": 9,
+    "title": "Enlisted Promotions",
+    "page": 171,
+    "waps": "both",
+    "sections": [
+      "9A",
+      "9B",
+      "9C",
+      "9D",
+      "9E"
+    ]
+  },
+  {
+    "chapter": 10,
+    "title": "Assignments and Occupational Codes",
+    "page": 181,
+    "waps": "off",
+    "sections": [
+      "10A",
+      "10B",
+      "10C"
+    ]
+  },
+  {
+    "chapter": 11,
+    "title": "Personnel Programs and Benefits",
+    "page": 202,
+    "waps": "both",
+    "sections": [
+      "11A",
+      "11B",
+      "11C",
+      "11D"
+    ]
+  },
+  {
+    "chapter": 12,
+    "title": "Finance, Manpower, and Resources",
+    "page": 225,
+    "waps": "both",
+    "sections": [
+      "12A",
+      "12B",
+      "12C",
+      "12D",
+      "12E"
+    ]
+  },
+  {
+    "chapter": 13,
+    "title": "Developing Organizations",
+    "page": 246,
+    "waps": "e6",
+    "sections": [
+      "13A",
+      "13B",
+      "13C"
+    ]
+  },
+  {
+    "chapter": 14,
+    "title": "Developing Others",
+    "page": 260,
+    "waps": "both",
+    "sections": [
+      "14A",
+      "14B",
+      "14C",
+      "14D"
+    ]
+  },
+  {
+    "chapter": 15,
+    "title": "Developing Self",
+    "page": 279,
+    "waps": "both",
+    "sections": [
+      "15A",
+      "15B",
+      "15C",
+      "15D",
+      "15E",
+      "15F"
+    ]
+  },
+  {
+    "chapter": 16,
+    "title": "Developing Ideas",
+    "page": 304,
+    "waps": "e6",
+    "sections": [
+      "16A",
+      "16B",
+      "16C",
+      "16D"
+    ]
+  },
+  {
+    "chapter": 17,
+    "title": "Emergency Management",
+    "page": 321,
+    "waps": "both",
+    "sections": [
+      "17A",
+      "17B",
+      "17C",
+      "17D",
+      "17E",
+      "17F"
+    ]
+  },
+  {
+    "chapter": 18,
+    "title": "Security",
+    "page": 342,
+    "waps": "both",
+    "sections": [
+      "18A",
+      "18B",
+      "18C",
+      "18D",
+      "18E"
+    ]
+  },
+  {
+    "chapter": 19,
+    "title": "Standards of Conduct",
+    "page": 362,
+    "waps": "both",
+    "sections": [
+      "19A",
+      "19B",
+      "19C"
+    ]
+  },
+  {
+    "chapter": 20,
+    "title": "Enforcing Military Standards",
+    "page": 377,
+    "waps": "both",
+    "sections": [
+      "20A",
+      "20B",
+      "20C",
+      "20D"
+    ]
+  },
+  {
+    "chapter": 21,
+    "title": "Military Justice",
+    "page": 399,
+    "waps": "off",
+    "sections": [
+      "21A",
+      "21B",
+      "21C",
+      "21D"
+    ]
+  },
+  {
+    "chapter": 22,
+    "title": "Fitness and Readiness",
+    "page": 414,
+    "waps": "both",
+    "sections": [
+      "22A",
+      "22B",
+      "22C",
+      "22D",
+      "22E"
+    ]
+  },
+  {
+    "chapter": 23,
+    "title": "Dress and Appearance",
+    "page": 440,
+    "waps": "off",
+    "sections": [
+      "23A",
+      "23B"
+    ]
+  },
+  {
+    "chapter": 24,
+    "title": "Military Customs and Courtesies",
+    "page": 543,
+    "waps": "both",
+    "sections": [
+      "24A",
+      "24B",
+      "24C",
+      "24D",
+      "24E",
+      "24F"
+    ]
+  }
+]
