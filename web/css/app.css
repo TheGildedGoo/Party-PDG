@@ -235,6 +235,7 @@ textarea { min-height: 120px; width: 100%; resize: vertical; }
   background: linear-gradient(90deg, var(--sage), var(--amber));
 }
 .choices { display: grid; gap: 10px; }
+.choices.reveal-lines { grid-template-columns: 1fr 1fr; }
 .choice {
   display: flex;
   align-items: center;
@@ -320,6 +321,7 @@ body.player .big-title { font-family: var(--display); font-size: 28px; letter-sp
   .stage { grid-template-columns: 1fr; }
   .chief { max-height: 180px; }
   .grid-2 { grid-template-columns: 1fr; }
+  .choices.reveal-lines { grid-template-columns: 1fr; }
   .bubble { font-size: 18px; }
 }
 @media (max-width: 420px) {

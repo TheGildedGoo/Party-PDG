@@ -522,11 +522,8 @@
   function revealBlock() {
     var reveal = game.reveal || {};
     var view = game.view || {};
-    var body = "";
-    if (reveal.decoyOptions && reveal.decoyOptions.length) body += decoyReveal(reveal.decoyOptions);
-    else if (view.choices) body += '<div class="choices">' + choiceHTML(view.choices, reveal.correctId) + "</div>";
     var stamp = (reveal.bucket === "wrong" || reveal.bucket === "fibfool") ? '<div class="stamp retrain motion-stamp">RETRAIN</div>' : '<div class="stamp motion-stamp">PROMOTED</div>';
-    body += stamp;
+    var body = stamp;
     body += '<div class="cite">' + PDG.esc(PDG.citeLabel(reveal.cite)) + "</div>";
     body += "<p>" + PDG.esc(reveal.explain || "") + "</p>";
     if (reveal.competency) body += '<p class="fine">Competency: ' + PDG.esc(reveal.competency) + "</p>";
@@ -534,12 +531,14 @@
     if (reveal.source && reveal.source !== reveal.explain) {
       body += '<div class="source"><strong>Handbook locator. </strong>' + PDG.esc(reveal.source) + "</div>";
     }
+    if (reveal.decoyOptions && reveal.decoyOptions.length) body += decoyReveal(reveal.decoyOptions);
+    else if (view.choices) body += '<div class="choices reveal-lines">' + choiceHTML(view.choices, reveal.correctId) + "</div>";
     if (!game.mode || !game.mode.autoAdvance) body += '<div class="row"><button class="btn amber" id="next" type="button">Next</button></div>';
     return body;
   }
 
   function decoyReveal(options) {
-    return '<div class="choices">' + options.map(function (o) {
+    return '<div class="choices reveal-lines">' + options.map(function (o) {
       var who = o.truth ? "Handbook" : "Decoy";
       return '<div class="choice ' + (o.truth ? "right" : "wrong") + '">' + markHTML(o) + '<div><strong>' + PDG.esc(o.text) + '</strong><div class="meta">' + who + "</div></div></div>";
     }).join("") + "</div>";
