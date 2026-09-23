@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 240" role="img" aria-label="PDG Party logo">
+<rect width="640" height="240" rx="28" fill="#0b1c2c"/>
+<path d="M36 48 h120 l18 18 v120 l-18 18 h-120 z" fill="none" stroke="#f5a623" stroke-width="8"/>
+<path d="M48 78 h96 M48 108 h78 M48 138 h88" stroke="#f4f7fb" stroke-width="6"/>
+<path d="M168 150 l28-70 28 70 h-18 l-10-28 -10 28 z" fill="#f5a623"/>
+<text x="240" y="120" fill="#f4f7fb" font-family="Arial Black, Arial" font-size="78">PDG</text>
+<text x="240" y="190" fill="#f5a623" font-family="Arial Black, Arial" font-size="64">PARTY</text>
+</svg>

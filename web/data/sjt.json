@@ -1,0 +1,1730 @@
+[
+  {
+    "id": "sjt-001",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A staff sergeant finds that yesterday's inspection log was backdated so a late check would look on time. The Airman who changed it says the jet still launched and asks the sergeant to leave the log alone.",
+    "actions": [
+      "Tell the Airman privately to stop, but leave the false entry in the binder.",
+      "Wait to see whether quality assurance notices before saying anything.",
+      "Correct the log, tell the Airman why a false record fails the mission, and report the falsification up the chain.",
+      "Edit the log again so the discrepancy disappears before the next shift."
+    ],
+    "mostIndex": 2,
+    "leastIndex": 3,
+    "explain": "Accountability means reliability and honesty for self and team. Fixing the record and reporting it owns the outcome, while rewriting the log hides the failure and teaches that a green binder matters more than the truth.",
+    "source": "AFH 1 (2025) para 15.1 — Accountability.",
+    "competency": "Accountability",
+    "category": "Developing Self",
+    "cite": {
+      "chapter": 15,
+      "section": "15A",
+      "para": "15.1",
+      "paragraph": "15.1",
+      "title": "Accountability",
+      "pageHint": "279"
+    },
+    "pageHint": 279,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "accountability"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": true
+  },
+  {
+    "id": "sjt-002",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "During a tool-kit inventory, a senior airman realizes a torque wrench was signed back in yesterday even though it is still in a truck. The crew chief is already briefing the commander that all tools are accounted for.",
+    "actions": [
+      "Stop the brief, state the missing wrench, and start the search with the inventory in hand.",
+      "Stay quiet so the brief stays smooth and search after the commander leaves.",
+      "Text a friend on another shift to borrow a wrench and sign the sheet.",
+      "Mention it only to the Airman who signed the sheet and let them decide."
+    ],
+    "mostIndex": 0,
+    "leastIndex": 1,
+    "explain": "Accountability requires acting when the consequence of silence is real. Stopping the brief prevents a false report, while staying quiet or swapping a wrench makes the Airman part of the deception.",
+    "source": "AFH 1 (2025) para 15.1 — Accountability.",
+    "competency": "Accountability",
+    "category": "Developing Self",
+    "cite": {
+      "chapter": 15,
+      "section": "15A",
+      "para": "15.1",
+      "paragraph": "15.1",
+      "title": "Accountability",
+      "pageHint": "279"
+    },
+    "pageHint": 279,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "sjt",
+      "accountability"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": true
+  },
+  {
+    "id": "sjt-003",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A senior airman fails the first attempt at a career-development course and tells the supervisor they are just not a school person and should stop trying.",
+    "actions": [
+      "Review the missed objectives with them, set a short practice plan, and schedule the next attempt.",
+      "Tell them to reread the book with no plan and no check on progress.",
+      "Reassign the study to a faster Airman and take the struggling one off the roster.",
+      "Agree they should drop the course because the first score proves the limit."
+    ],
+    "mostIndex": 0,
+    "leastIndex": 3,
+    "explain": "A growth mindset treats the failed attempt as information, not a permanent label. Building a practice plan uses effort as the path forward, while dropping them or handing the work away confirms a fixed mindset.",
+    "source": "AFH 1 (2025) para 15.2 — Perseverance.",
+    "competency": "Perseverance",
+    "category": "Developing Self",
+    "cite": {
+      "chapter": 15,
+      "section": "15A",
+      "para": "15.2",
+      "paragraph": "15.2",
+      "title": "Perseverance",
+      "pageHint": "279"
+    },
+    "pageHint": 279,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "sjt",
+      "perseverance"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": true
+  },
+  {
+    "id": "sjt-004",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A technical sergeant's process-improvement project misses its first target. Two teammates want to scrap it and go back to the old workaround.",
+    "actions": [
+      "Compare the result to the target, adjust the countermeasure, and run the next check.",
+      "Announce the project failed and forbid anyone to mention it.",
+      "Keep the same broken step but rename the project so it looks new.",
+      "Delete the data so the missed target is not briefed."
+    ],
+    "mostIndex": 0,
+    "leastIndex": 3,
+    "explain": "Perseverance here is returning to the work with data, which is also how practical problem solving confirms results. Hiding the miss or renaming it avoids learning.",
+    "source": "AFH 1 (2025) para 15.2 — Perseverance.",
+    "competency": "Perseverance",
+    "category": "Developing Self",
+    "cite": {
+      "chapter": 15,
+      "section": "15A",
+      "para": "15.2",
+      "paragraph": "15.2",
+      "title": "Perseverance",
+      "pageHint": "279"
+    },
+    "pageHint": 279,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "perseverance"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": true
+  },
+  {
+    "id": "sjt-005",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "On a Friday push, a staff sergeant is chewed out in front of the shift for a call they actually made correctly. They feel the urge to snap back.",
+    "actions": [
+      "Post a recording of the argument on a group chat.",
+      "Match the volume and insult the supervisor in front of the shift.",
+      "Pause, move the talk private, and stick to the facts of the call.",
+      "Walk out of the building and leave the jet unsigned."
+    ],
+    "mostIndex": 2,
+    "leastIndex": 1,
+    "explain": "Self-control means restraining the impulse and, when possible, leaving the trigger. A private factual talk does that. Public insults, abandoning the jet, and a group-chat blast spend the impulse instead.",
+    "source": "AFH 1 (2025) para 15.3 — Self-Control.",
+    "competency": "Self-Control",
+    "category": "Developing Self",
+    "cite": {
+      "chapter": 15,
+      "section": "15A",
+      "para": "15.3",
+      "paragraph": "15.3",
+      "title": "Self-Control",
+      "pageHint": "279"
+    },
+    "pageHint": 279,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "self-control"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-006",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "An Airman who has been trying to cut back on energy drinks keeps a case in the duty-section fridge and has already had three before noon.",
+    "actions": [
+      "Lecture the Airman once and leave the case in reach.",
+      "Move the case out of the work center and set a water plan for the rest of the shift.",
+      "Bet the shift that they can finish the case before crew change.",
+      "Hide the empties so the supervisor will not ask."
+    ],
+    "mostIndex": 1,
+    "leastIndex": 2,
+    "explain": "The handbook says changing the situation beats white-knuckling a temptation that stays in sight. Removing the case does that. A bet, a cover-up, or a lecture with the temptation still present is weaker.",
+    "source": "AFH 1 (2025) para 15.3 — Self-Control.",
+    "competency": "Self-Control",
+    "category": "Developing Self",
+    "cite": {
+      "chapter": 15,
+      "section": "15A",
+      "para": "15.3",
+      "paragraph": "15.3",
+      "title": "Self-Control",
+      "pageHint": "279"
+    },
+    "pageHint": 279,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "sjt",
+      "self-control"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-007",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A staff sergeant bombs a high-visibility briefing and spends the weekend replaying it as proof they should never brief again.",
+    "actions": [
+      "Tell the flight the briefing went well so nobody offers help.",
+      "Refuse every future briefing so the feeling cannot return.",
+      "Write what the audience needed, rebuild the opening, and ask for one more rep with a coach.",
+      "Blame the audience in the next staff meeting."
+    ],
+    "mostIndex": 2,
+    "leastIndex": 1,
+    "explain": "Resilience uses reappraisal: the bad brief is information, not an identity. Rebuilding and practicing treats it as a challenge. Quitting, blaming, or faking the result blocks recovery.",
+    "source": "AFH 1 (2025) para 15.4 — Resilience.",
+    "competency": "Resilience",
+    "category": "Developing Self",
+    "cite": {
+      "chapter": 15,
+      "section": "15A",
+      "para": "15.4",
+      "paragraph": "15.4",
+      "title": "Resilience",
+      "pageHint": "279"
+    },
+    "pageHint": 279,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "resilience"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-008",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A new Airman keeps missing a handover because the outgoing shift's notes use undefined acronyms. The supervisor has been copying the same note forward.",
+    "actions": [
+      "Add more acronyms so the note looks more official.",
+      "Rewrite the handover template in plain words, train both shifts, and check the next three turnovers.",
+      "Tell the new Airman to figure the acronyms out alone.",
+      "Stop writing handovers and rely on memory."
+    ],
+    "mostIndex": 1,
+    "leastIndex": 2,
+    "explain": "Effective communication is focused, clear, and matched to the audience. A plain template does that. Leaving the Airman to decode, adding jargon, or dropping the record keeps the miss in place.",
+    "source": "AFH 1 (2025) para 15.14 — FOCUS.",
+    "competency": "Communication",
+    "category": "Developing Self",
+    "cite": {
+      "chapter": 15,
+      "section": "15C",
+      "para": "15.14",
+      "paragraph": "15.14",
+      "title": "FOCUS",
+      "pageHint": "288"
+    },
+    "pageHint": 288,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "sjt",
+      "communication"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-009",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A technical sergeant must tell the flight that a weekend duty roster is changing and several people will lose a planned pass. Rumors are already wrong.",
+    "actions": [
+      "Post only 'check your email' with no roster and no reason.",
+      "Let the rumor run so nobody has to deliver bad news.",
+      "Tell each friend a different version that protects them.",
+      "Brief the reason, the new roster, and the appeal path in person before the rumor hardens."
+    ],
+    "mostIndex": 3,
+    "leastIndex": 1,
+    "explain": "Clear communication addresses the whole issue for the people affected. An in-person brief with the reason and the roster does that. Silence, a vague ping, or favoritism by private versions breeds distrust.",
+    "source": "AFH 1 (2025) para 15.13 — Communicating Intent.",
+    "competency": "Communication",
+    "category": "Developing Self",
+    "cite": {
+      "chapter": 15,
+      "section": "15C",
+      "para": "15.13",
+      "paragraph": "15.13",
+      "title": "Communicating Intent",
+      "pageHint": "288"
+    },
+    "pageHint": 288,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "communication"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-010",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A senior airman notices the same bolt is being installed backward on every other aircraft and the tech data picture is easy to misread. The lead is at lunch.",
+    "actions": [
+      "Wait for a mishap report before changing anything.",
+      "Complain in the break room and change nothing on the aircraft.",
+      "Stop the next install, show the crew the correct orientation, and leave a marked photo at the task.",
+      "Keep installing it backward so the shift count stays high."
+    ],
+    "mostIndex": 2,
+    "leastIndex": 0,
+    "explain": "Initiative is acting on a clear hazard with the authority the Airman already has. Stopping the task and marking the step prevents the repeat. Waiting, speeding, or only complaining leaves the hazard in place.",
+    "source": "AFH 1 (2025) para 15.1 — Accountability.",
+    "competency": "Initiative",
+    "category": "Developing Self",
+    "cite": {
+      "chapter": 15,
+      "section": "15A",
+      "para": "15.1",
+      "paragraph": "15.1",
+      "title": "Accountability",
+      "pageHint": "279"
+    },
+    "pageHint": 279,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "initiative"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-011",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "The range closes an hour before a qualifications firing. Half the flight has not shot. The supervisor can move people to a later bay or cancel and hope next month works.",
+    "actions": [
+      "Rebook the open bay, retask the people still unqualified, and tell the flight the new time.",
+      "Send only the supervisor's friends to the open bay.",
+      "Cancel and record everyone as complete.",
+      "Tell the flight to figure it out with no roster."
+    ],
+    "mostIndex": 0,
+    "leastIndex": 2,
+    "explain": "Flexibility adjusts the plan without dropping the standard. Rebooking the unqualified Airmen does that. False completion, favoritism, and an empty order do not.",
+    "source": "AFH 1 (2025) para 15.2 — Perseverance.",
+    "competency": "Flexibility",
+    "category": "Developing Self",
+    "cite": {
+      "chapter": 15,
+      "section": "15A",
+      "para": "15.2",
+      "paragraph": "15.2",
+      "title": "Perseverance",
+      "pageHint": "279"
+    },
+    "pageHint": 279,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "sjt",
+      "flexibility"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-012",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A work center wants to buy a new tracking board because jobs feel slow. Nobody has counted where the jobs actually wait.",
+    "actions": [
+      "Pause the purchase and time the steps until the wait is visible in the data.",
+      "Blame the night shift without a count.",
+      "Buy the board today so the meeting can end.",
+      "Pick the most expensive board because it looks decisive."
+    ],
+    "mostIndex": 0,
+    "leastIndex": 2,
+    "explain": "Informed decisions wait for data when the problem is not yet validated. Timing the steps does that. Buying, blaming, or spending to look decisive assumes a solution the handbook says a problem statement must not assume.",
+    "source": "AFH 1 (2025) para 16C — Informed Decision-Making.",
+    "competency": "Decision Making",
+    "category": "Developing Ideas",
+    "cite": {
+      "chapter": 16,
+      "section": "16C",
+      "para": "16C",
+      "paragraph": "16C",
+      "title": "Informed Decision-Making",
+      "pageHint": "313"
+    },
+    "pageHint": 313,
+    "ranks": [
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "decision-making"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-013",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A team is stuck on how to cut a two-hour paperwork loop. The first three ideas are all variants of 'tell people to hurry.'",
+    "actions": [
+      "Adopt the hurry speech and skip the rest of the meeting.",
+      "Let the ranking person pick before anyone else speaks.",
+      "Shut down every idea that sounds odd in the first minute.",
+      "Set a timer and collect unusual options before judging any of them."
+    ],
+    "mostIndex": 3,
+    "leastIndex": 2,
+    "explain": "Divergent thinking defers judgment so ideas can surface, including odd ones, before the team converges. Killing odd ideas, repeating hurry, or letting rank choose first collapses that step.",
+    "source": "AFH 1 (2025) para 16B — Cognitive Processes.",
+    "competency": "Creative Thinking",
+    "category": "Developing Ideas",
+    "cite": {
+      "chapter": 16,
+      "section": "16B",
+      "para": "16B",
+      "paragraph": "16B",
+      "title": "Cognitive Processes",
+      "pageHint": "306"
+    },
+    "pageHint": 306,
+    "ranks": [
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "creative-thinking"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-014",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "After a countermeasure, the backlog is unchanged. A teammate says the project is done because the slide was briefed.",
+    "actions": [
+      "Mark the project complete because the brief happened.",
+      "Compare the new numbers to the original gap and return to the root cause if the target was missed.",
+      "Change the target so the old number now counts as success.",
+      "Stop measuring so the miss cannot be seen."
+    ],
+    "mostIndex": 1,
+    "leastIndex": 0,
+    "explain": "Confirming results means comparing outcomes to the gap and the target. If the target is missed, the common mistake is a wrong root cause, so the team goes back. Declaring victory, moving the target, or dropping the measure hides the miss.",
+    "source": "AFH 1 (2025) para 16C — Informed Decision-Making.",
+    "competency": "Analytical Thinking",
+    "category": "Developing Ideas",
+    "cite": {
+      "chapter": 16,
+      "section": "16C",
+      "para": "16C",
+      "paragraph": "16C",
+      "title": "Informed Decision-Making",
+      "pageHint": "313"
+    },
+    "pageHint": 313,
+    "ranks": [
+      "E6"
+    ],
+    "difficulty": 4,
+    "tags": [
+      "sjt",
+      "analytical-thinking"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-015",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "An Airman sketches a safer way to stage test equipment. Peers laugh because it uses a cart from another shop.",
+    "actions": [
+      "Ask what the cart changes in time and risk, then pilot it on one job.",
+      "Order the whole flight to switch today with no trial.",
+      "Take the sketch, put your name on it, and brief it as your idea.",
+      "Laugh with the group and drop the sketch."
+    ],
+    "mostIndex": 0,
+    "leastIndex": 3,
+    "explain": "Innovation needs a small test and honest credit. A one-job pilot checks the idea. Mockery kills it, an untested order skips learning, and stealing credit destroys the next idea.",
+    "source": "AFH 1 (2025) para 16B — Cognitive Processes.",
+    "competency": "Fostering Innovation",
+    "category": "Developing Ideas",
+    "cite": {
+      "chapter": 16,
+      "section": "16B",
+      "para": "16B",
+      "paragraph": "16B",
+      "title": "Cognitive Processes",
+      "pageHint": "306"
+    },
+    "pageHint": 306,
+    "ranks": [
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "fostering-innovation"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-016",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A staff sergeant needs the night shift to adopt a new checklist. The night lead says day shift is dumping work on them.",
+    "actions": [
+      "Ignore night shift and hope day shift's copy is enough.",
+      "Email 'comply by Friday' with no reason.",
+      "Threaten paperwork before explaining the defect.",
+      "Walk the night lead through the defect the checklist catches and invite them to edit the steps."
+    ],
+    "mostIndex": 3,
+    "leastIndex": 1,
+    "explain": "Influence here is acceptance, which the problem-solving method says is half of a solution's impact. Inviting the night lead to shape the checklist builds that. A bare order, a threat, or a one-shift copy does not.",
+    "source": "AFH 1 (2025) para 16B — Cognitive Processes.",
+    "competency": "Influence",
+    "category": "Developing Ideas",
+    "cite": {
+      "chapter": 16,
+      "section": "16B",
+      "para": "16B",
+      "paragraph": "16B",
+      "title": "Cognitive Processes",
+      "pageHint": "306"
+    },
+    "pageHint": 306,
+    "ranks": [
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "influence"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-017",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A five-person team is in its second week. Two members argue over who leads, and the newest Airman has stopped talking.",
+    "actions": [
+      "Cancel the task so the argument ends.",
+      "Split the team into two camps and assign duplicate work.",
+      "Restate the roles, give the quiet Airman a specific piece of the task, and keep the argument on the work.",
+      "Let the loudest member take over and bench the quiet one."
+    ],
+    "mostIndex": 2,
+    "leastIndex": 3,
+    "explain": "Storming is a normal stage, and the leader's job is to clarify roles so cooperation can return. Bench, camps, and cancellation feed the power struggle instead of the mission.",
+    "source": "AFH 1 (2025) para 14.2 — Stages of Team Building.",
+    "competency": "Teamwork",
+    "category": "Developing Others",
+    "cite": {
+      "chapter": 14,
+      "section": "14A",
+      "para": "14.2",
+      "paragraph": "14.2",
+      "title": "Stages of Team Building",
+      "pageHint": "260"
+    },
+    "pageHint": 260,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "sjt",
+      "teamwork"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-018",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "One specialist hoards a troubleshooting trick and lets teammates fail so they look slower.",
+    "actions": [
+      "Praise the specialist in front of the flight for being the only one who can do it.",
+      "Require the trick to be taught at the next shift change and pair the specialist with a teammate on the following job.",
+      "Move the specialist to a solo shift so the hoarding is easier.",
+      "Punish the teammates for being slow without asking why."
+    ],
+    "mostIndex": 1,
+    "leastIndex": 0,
+    "explain": "Trust and cooperation fail when someone withholds the method. Teaching and pairing rebuild shared ownership. Public praise for hoarding, blaming the others, or isolating the specialist rewards the behavior.",
+    "source": "AFH 1 (2025) para 14.1 — Team Building.",
+    "competency": "Teamwork",
+    "category": "Developing Others",
+    "cite": {
+      "chapter": 14,
+      "section": "14A",
+      "para": "14.1",
+      "paragraph": "14.1",
+      "title": "Team Building",
+      "pageHint": "260"
+    },
+    "pageHint": 260,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "teamwork"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-019",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A senior airman wants to lead the next small project but has never built a plan. The supervisor could do it faster alone.",
+    "actions": [
+      "Give the lead to a friend who did not ask.",
+      "Do the project yourself and tell them to watch silently.",
+      "Give them the lead, review the plan at two checkpoints, and debrief what to repeat.",
+      "Hand them the lead and disappear until the due date."
+    ],
+    "mostIndex": 2,
+    "leastIndex": 1,
+    "explain": "Developing people means a real task plus coaching, which is what mentoring's teach-and-respond steps describe. Doing it yourself, vanishing, or playing favorites removes the development.",
+    "source": "AFH 1 (2025) para 14.9 — The Leader as a Mentor.",
+    "competency": "Develops People",
+    "category": "Developing Others",
+    "cite": {
+      "chapter": 14,
+      "section": "14C",
+      "para": "14.9",
+      "paragraph": "14.9",
+      "title": "The Leader as a Mentor",
+      "pageHint": "266"
+    },
+    "pageHint": 266,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "sjt",
+      "develops-people"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-020",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "Feedback is due and the rater has only vague notes such as 'good Airman.' The ratee has asked what to improve before the evaluation.",
+    "actions": [
+      "Sit down with specific examples of what met the standard and one skill to practice before the closeout.",
+      "Tell the ratee the evaluation is already written and feedback would not matter.",
+      "Praise them in public and give no private correction.",
+      "Skip the session because the notes are thin."
+    ],
+    "mostIndex": 0,
+    "leastIndex": 3,
+    "explain": "Feedback is a two-way talk with specific comments so the ratee can improve before the report. Skipping, declaring it useless, or offering only public praise withholds the correction the session is for.",
+    "source": "AFH 1 (2025) para 14.6 — Leadership Responsibility.",
+    "competency": "Develops People",
+    "category": "Developing Others",
+    "cite": {
+      "chapter": 14,
+      "section": "14B",
+      "para": "14.6",
+      "paragraph": "14.6",
+      "title": "Leadership Responsibility",
+      "pageHint": "264"
+    },
+    "pageHint": 264,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "develops-people"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-021",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A troop's family emergency overlaps a scheduling crunch. The supervisor can adjust the roster or tell the troop to figure it out alone.",
+    "actions": [
+      "Deny the absence with no questions so the board stays green.",
+      "Confirm the emergency, adjust the roster within the rules, and point the troop to the helping agency.",
+      "Announce the family details at roll call.",
+      "Make the troop trade away every future weekend as the price of help."
+    ],
+    "mostIndex": 1,
+    "leastIndex": 0,
+    "explain": "Service mindset uses the helping system and protects the person while the mission is covered. A blanket denial, a public story, or a punitive trade misuses the supervisor's position.",
+    "source": "AFH 1 (2025) para 14.9 — The Leader as a Mentor.",
+    "competency": "Service Mindset",
+    "category": "Developing Others",
+    "cite": {
+      "chapter": 14,
+      "section": "14C",
+      "para": "14.9",
+      "paragraph": "14.9",
+      "title": "The Leader as a Mentor",
+      "pageHint": "266"
+    },
+    "pageHint": 266,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "sjt",
+      "service-mindset"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-022",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "Standards slipped on a swing shift the flight chief has not visited in a month. The chief's desk is full of email.",
+    "actions": [
+      "Wait for an inspection to name the problem.",
+      "Walk the swing shift, watch the task, and correct the drift on the spot.",
+      "Send an email that says standards matter and stay at the desk.",
+      "Blame the shift in a meeting you did not attend."
+    ],
+    "mostIndex": 1,
+    "leastIndex": 2,
+    "explain": "Getting out from behind the desk is how a leader sees the work. Presence and correction beat a slogan email, an inspection surprise, or blame without observation.",
+    "source": "AFH 1 (2025) para 14.22 — Leadership Styles.",
+    "competency": "Leadership",
+    "category": "Developing Others",
+    "cite": {
+      "chapter": 14,
+      "section": "14D",
+      "para": "14.22",
+      "paragraph": "14.22",
+      "title": "Leadership Styles",
+      "pageHint": "271"
+    },
+    "pageHint": 271,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "leadership"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-023",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A flight is meeting every goal only because the sergeant checks every move and never asks what the Airmen see. People have stopped offering ideas.",
+    "actions": [
+      "Leave the flight alone until something breaks.",
+      "Add more checks and punish the first person who questions one.",
+      "Loosen every standard so ideas feel welcome.",
+      "Keep the standard, ask the crew what is getting in the way, and adopt one change they own."
+    ],
+    "mostIndex": 3,
+    "leastIndex": 2,
+    "explain": "This is the difference between active control and transformational listening. Keeping the standard while inviting ideas uses intellectual stimulation. Dropping standards, punishing questions, or waiting for failure are the passive or coercive ends.",
+    "source": "AFH 1 (2025) para 14.25 — FRLD Model.",
+    "competency": "Leadership",
+    "category": "Developing Others",
+    "cite": {
+      "chapter": 14,
+      "section": "14D",
+      "para": "14.25",
+      "paragraph": "14.25",
+      "title": "FRLD Model",
+      "pageHint": "271"
+    },
+    "pageHint": 271,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 4,
+    "tags": [
+      "sjt",
+      "leadership"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-024",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A new tracking tool is coming. Veterans say the old binder was fine. The project lead wants to threaten paperwork on day one.",
+    "actions": [
+      "Show the defect in the binder, train on the tool, and invite the veterans to shape the first week's fixes.",
+      "Announce the change and then keep using the binder in secret.",
+      "Threaten paperwork before anyone has seen the defect.",
+      "Install the tool overnight and delete the binder with no training."
+    ],
+    "mostIndex": 0,
+    "leastIndex": 2,
+    "explain": "Lewin's unfreezing starts by helping people feel the need, and coercion is not the recommended path. Training plus involvement beats a threat, a surprise cutover, or a fake announcement.",
+    "source": "AFH 1 (2025) para 13.11 — Three-Stage Change.",
+    "competency": "Change Management",
+    "category": "Developing Organizations",
+    "cite": {
+      "chapter": 13,
+      "section": "13C",
+      "para": "13.11",
+      "paragraph": "13.11",
+      "title": "Three-Stage Change",
+      "pageHint": "252"
+    },
+    "pageHint": 252,
+    "ranks": [
+      "E6"
+    ],
+    "difficulty": 4,
+    "tags": [
+      "sjt",
+      "change-management"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-025",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A improved checklist works on one shift but the other two shifts never saw it. The lead is ready to brief the project as finished.",
+    "actions": [
+      "Brief it complete because one shift improved.",
+      "Put the checklist in the work standard, train the other shifts, and check that they use it.",
+      "Drop the checklist so all three shifts match the old way.",
+      "Email the file and assume reading equals use."
+    ],
+    "mostIndex": 1,
+    "leastIndex": 0,
+    "explain": "Standardizing is the step teams most often skip. Writing it into the standard and training the other shifts locks the gain. A brief, an unread email, or a return to the old way lets the gain melt.",
+    "source": "AFH 1 (2025) para 13.13 — Practical Problem Solving.",
+    "competency": "Change Management",
+    "category": "Developing Organizations",
+    "cite": {
+      "chapter": 13,
+      "section": "13C",
+      "para": "13.13",
+      "paragraph": "13.13",
+      "title": "Practical Problem Solving",
+      "pageHint": "252"
+    },
+    "pageHint": 252,
+    "ranks": [
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "change-management"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-026",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A help-desk lead sets a personal ticket quota so high that technicians stop helping new teammates.",
+    "actions": [
+      "Rank the team publicly by raw ticket count only.",
+      "Tell technicians to close tickets without fixing them.",
+      "Raise each person's quota again.",
+      "Reset the goal so the section's total, including coaching, is what gets measured."
+    ],
+    "mostIndex": 3,
+    "leastIndex": 2,
+    "explain": "Group-centric goals fit interdependent work better than ego-centric counts that punish helping. Raising the individual quota, faking closures, or a public raw ranking makes the backfire worse.",
+    "source": "AFH 1 (2025) para 13.5 — Results Focus.",
+    "competency": "Results Focus",
+    "category": "Developing Organizations",
+    "cite": {
+      "chapter": 13,
+      "section": "13A",
+      "para": "13.5",
+      "paragraph": "13.5",
+      "title": "Results Focus",
+      "pageHint": "246"
+    },
+    "pageHint": 246,
+    "ranks": [
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "results-focus"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-027",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A shop is about to spend its whole training budget on one class that only the day shift can attend. Nights have the same gap.",
+    "actions": [
+      "Look for a way one trained Airman can teach the others before buying a second full class.",
+      "Cancel all training because the first request was denied.",
+      "Send the same request up unchanged every week.",
+      "Spend the budget on the day shift and leave nights untrained."
+    ],
+    "mostIndex": 0,
+    "leastIndex": 3,
+    "explain": "Intellectual flexibility looks for another path when the first request fails, which is the mindset example in the strategic-thinking section. Serving only one shift, quitting, or repeating the denied request does not close the gap.",
+    "source": "AFH 1 (2025) para 13.3 — Strategic Thinking Mindset.",
+    "competency": "Strategic Thinking",
+    "category": "Developing Organizations",
+    "cite": {
+      "chapter": 13,
+      "section": "13A",
+      "para": "13.3",
+      "paragraph": "13.3",
+      "title": "Strategic Thinking Mindset",
+      "pageHint": "246"
+    },
+    "pageHint": 246,
+    "ranks": [
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "strategic-thinking"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-028",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A cost-center manager sees the supply account trending high in the second month of the quarter, with a known stockpile of unused items on the shelf.",
+    "actions": [
+      "Move the bill to another shop's code without telling them.",
+      "Stop the reorders, use the shelf stock, and brief the resource advisor before the money is gone.",
+      "Keep ordering so the account looks busy.",
+      "Hide the trend until the fiscal year closes."
+    ],
+    "mostIndex": 1,
+    "leastIndex": 2,
+    "explain": "Resource stewardship means watching consumption against the plan and correcting it. Using stock and telling the advisor does that. Busy orders, a cover-up, or a silent code change waste the resource.",
+    "source": "AFH 1 (2025) para 13.6 — Resource Management.",
+    "competency": "Resource Management",
+    "category": "Developing Organizations",
+    "cite": {
+      "chapter": 13,
+      "section": "13B",
+      "para": "13.6",
+      "paragraph": "13.6",
+      "title": "Resource Management",
+      "pageHint": "249"
+    },
+    "pageHint": 249,
+    "ranks": [
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "resource-management"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-029",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A maintenance entry has the right job but the wrong serial number. The jet is already on time. The Airman who typed it says close enough.",
+    "actions": [
+      "Correct the serial number before the form is signed, even if the launch waits a minute.",
+      "Sign it close enough so the clock stays green.",
+      "Copy the serial from a different aircraft in the same spot.",
+      "Leave a blank serial and fill it from memory next week."
+    ],
+    "mostIndex": 0,
+    "leastIndex": 1,
+    "explain": "Precision is part of a reliable record. Correcting the serial protects the aircraft history. Close enough, a blank, or another jet's number creates a false record.",
+    "source": "AFH 1 (2025) para 15.1 — Accountability.",
+    "competency": "Precision",
+    "category": "Developing Self",
+    "cite": {
+      "chapter": 15,
+      "section": "15A",
+      "para": "15.1",
+      "paragraph": "15.1",
+      "title": "Accountability",
+      "pageHint": "279"
+    },
+    "pageHint": 279,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "sjt",
+      "precision"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-030",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A staff sergeant inherits a program and cannot find the current instruction. A peer says they have always done it the old way.",
+    "actions": [
+      "Keep the old way because it is familiar.",
+      "Pull the current publication and compare the shop's steps to it before the next cycle.",
+      "Ask the shop to vote on which steps they like.",
+      "Write a local rule that contradicts the publication."
+    ],
+    "mostIndex": 1,
+    "leastIndex": 0,
+    "explain": "Information seeking means going to the source before deciding. Checking the current publication does that. Habit, a popularity vote, or a local contradiction skips the source.",
+    "source": "AFH 1 (2025) para 16C — Informed Decision-Making.",
+    "competency": "Information Seeking",
+    "category": "Developing Ideas",
+    "cite": {
+      "chapter": 16,
+      "section": "16C",
+      "para": "16C",
+      "paragraph": "16C",
+      "title": "Informed Decision-Making",
+      "pageHint": "313"
+    },
+    "pageHint": 313,
+    "ranks": [
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "information-seeking"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-031",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "An Airman wants to post a photo of a maintenance screen that shows part numbers and the unit's upcoming deployment window. They ask if a private social account makes it acceptable.",
+    "actions": [
+      "Crop the names but leave the deployment dates in the frame.",
+      "Post it on a private account because only friends will see the deployment window.",
+      "Ask the group chat to vote and then post whichever version wins.",
+      "Do not post it. Classified and controlled unclassified official information stays off social networks without proper authority."
+    ],
+    "mostIndex": 3,
+    "leastIndex": 1,
+    "explain": "Digital literacy here is knowing official information does not become releasable because the account is private. Paragraph 15.9 bars classified and controlled unclassified information on social networks without authority. Cropping names or taking a vote still publishes the protected detail.",
+    "source": "AFH 1 (2025) para 15.9 — Social Media.",
+    "competency": "Digital Literacy",
+    "category": "Developing Self",
+    "cite": {
+      "chapter": 15,
+      "section": "15B",
+      "para": "15.9",
+      "paragraph": "15.9",
+      "title": "Social Media",
+      "pageHint": "284"
+    },
+    "pageHint": 284,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "sjt",
+      "digital-literacy"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-032",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "Three shops blame each other for late parts. Each brings opinions. No one has a timeline of where the parts sit.",
+    "actions": [
+      "Stop the discussion and add a new form.",
+      "Build one timeline from the records and see which handoff actually adds the delay.",
+      "Side with the shop that complains the loudest.",
+      "Average the blame so every shop gets a talking-to."
+    ],
+    "mostIndex": 1,
+    "leastIndex": 2,
+    "explain": "Analytical thinking separates opinion from the gap. A timeline shows the handoff. Volume, shared blame with no data, and a new form assume a cause.",
+    "source": "AFH 1 (2025) para 13.13 — Practical Problem Solving.",
+    "competency": "Analytical Thinking",
+    "category": "Developing Organizations",
+    "cite": {
+      "chapter": 13,
+      "section": "13C",
+      "para": "13.13",
+      "paragraph": "13.13",
+      "title": "Practical Problem Solving",
+      "pageHint": "252"
+    },
+    "pageHint": 252,
+    "ranks": [
+      "E6"
+    ],
+    "difficulty": 4,
+    "tags": [
+      "sjt",
+      "analytical-thinking"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-033",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A junior Airman spots a frayed cable near a fuel cart and the supervisor is in a meeting across base.",
+    "actions": [
+      "Stop the operation, mark the cable, and call the supervisor with the exact location.",
+      "Wait until the meeting ends and hope nobody moves the cart.",
+      "Cut the cable to be helpful without isolating power.",
+      "Walk past it because reporting might slow the launch."
+    ],
+    "mostIndex": 0,
+    "leastIndex": 1,
+    "explain": "Initiative on a clear hazard means stop, mark, and notify. Waiting, cutting blind, or protecting the clock leaves people exposed.",
+    "source": "AFH 1 (2025) para 14.22 — Leadership Styles.",
+    "competency": "Initiative",
+    "category": "Developing Others",
+    "cite": {
+      "chapter": 14,
+      "section": "14D",
+      "para": "14.22",
+      "paragraph": "14.22",
+      "title": "Leadership Styles",
+      "pageHint": "271"
+    },
+    "pageHint": 271,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "initiative"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-034",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A teammate is short with customers after a hard week. The customers are starting to snap back. The teammate is not asking for help.",
+    "actions": [
+      "Trade them off the counter with no conversation.",
+      "Mock their tone in front of the customers.",
+      "Take the next customer with them, then ask privately what support they need.",
+      "Tell the customers the teammate is always like that."
+    ],
+    "mostIndex": 2,
+    "leastIndex": 1,
+    "explain": "Service mindset protects both the customer and the teammate. Pairing and a private offer does that. Mockery, a silent removal, or badmouthing makes the week worse.",
+    "source": "AFH 1 (2025) para 15.4 — Resilience.",
+    "competency": "Service Mindset",
+    "category": "Developing Self",
+    "cite": {
+      "chapter": 15,
+      "section": "15A",
+      "para": "15.4",
+      "paragraph": "15.4",
+      "title": "Resilience",
+      "pageHint": "279"
+    },
+    "pageHint": 279,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "sjt",
+      "service-mindset"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-035",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A technical sergeant loses a deployment slot after months of prep because a medical waiver slips. They tell the flight the process is rigged and stop helping the next names on the list.",
+    "actions": [
+      "Complain up the chain with no facts and no offer to fix the package.",
+      "Tell the flight to stop trying because the system is rigged.",
+      "Tell the flight what the waiver changed, help the next Airman build a cleaner package, and book the follow-up that could restore their own eligibility.",
+      "Vent in the office and leave the next package to whoever wants it."
+    ],
+    "mostIndex": 2,
+    "leastIndex": 1,
+    "explain": "Resilience is adapting after the setback and staying in the work. Helping the next package and repairing your own eligibility does that. Quitting on the flight, or complaining with no facts, freezes the miss in place.",
+    "source": "AFH 1 (2025) para 15.4 — Resilience.",
+    "competency": "Resilience",
+    "category": "Developing Self",
+    "cite": {
+      "chapter": 15,
+      "section": "15A",
+      "para": "15.4",
+      "paragraph": "15.4",
+      "title": "Resilience",
+      "pageHint": "279"
+    },
+    "pageHint": 279,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "sjt",
+      "resilience"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-036",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "The printer that produces aircraft forms dies an hour before a generation. A supervisor can reroute the forms to another shop's printer or hold the line until a new machine is purchased.",
+    "actions": [
+      "Wait until the next duty day and hope the forms were optional.",
+      "Tell each Airman to invent a personal form on scratch paper with no standard.",
+      "Cancel the generation and wait for a new printer to be purchased.",
+      "Reroute the forms, tell the line the new pickup point, and keep the generation on time."
+    ],
+    "mostIndex": 3,
+    "leastIndex": 2,
+    "explain": "Flexibility here is changing the path without dropping the standard. A known printer in another shop keeps the generation honest. Canceling, freelancing forms, or hoping the forms do not matter abandons the job.",
+    "source": "AFH 1 (2025) para 15.2 — Flexibility.",
+    "competency": "Flexibility",
+    "category": "Developing Self",
+    "cite": {
+      "chapter": 15,
+      "section": "15A",
+      "para": "15.2",
+      "paragraph": "15.2",
+      "title": "Flexibility",
+      "pageHint": "279"
+    },
+    "pageHint": 279,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "sjt",
+      "flexibility"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-037",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "Two Airmen give opposite causes for a repeat delay. One blames manning. One blames a broken scanner. The lead has a short window before a decision brief.",
+    "actions": [
+      "Delay the brief with no plan to gather the missing count.",
+      "Check the last several jobs for where time actually stacked, then brief that cause and the next check.",
+      "Pick the cause that matches the lead's hunch and skip the check.",
+      "Brief both stories as equal facts."
+    ],
+    "mostIndex": 1,
+    "leastIndex": 2,
+    "explain": "An informed decision waits on the relevant fact, not on rank or rumor. Counting where the jobs wait beats a hunch, a tie between two stories, or a delay with no plan.",
+    "source": "AFH 1 (2025) section 16C — Informed Decision-Making.",
+    "competency": "Decision Making",
+    "category": "Developing Ideas",
+    "cite": {
+      "chapter": 16,
+      "section": "16C",
+      "para": "16C",
+      "paragraph": "16C",
+      "title": "Informed Decision-Making",
+      "pageHint": "313"
+    },
+    "pageHint": 313,
+    "ranks": [
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "decision-making"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-038",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A checklist has grown to forty steps and crews skip the middle. Every previous fix was another step added to the list.",
+    "actions": [
+      "Add ten more steps so skipping feels riskier.",
+      "Tell crews to try harder and leave the checklist unchanged.",
+      "Ask the team for ways to combine or cut steps that do not protect a hazard, and test one shorter version on a single shift.",
+      "Throw out the checklist with no replacement."
+    ],
+    "mostIndex": 2,
+    "leastIndex": 0,
+    "explain": "Creative thinking opens options that are not copies of the last fix. A tested shorter list is one of those options. Adding steps, scolding, or deleting the control with nothing in its place stays inside the old rut.",
+    "source": "AFH 1 (2025) section 16B — Creative Thinking.",
+    "competency": "Creative Thinking",
+    "category": "Developing Ideas",
+    "cite": {
+      "chapter": 16,
+      "section": "16B",
+      "para": "16B",
+      "paragraph": "16B",
+      "title": "Creative Thinking",
+      "pageHint": "306"
+    },
+    "pageHint": 306,
+    "ranks": [
+      "E6"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "sjt",
+      "creative-thinking"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-039",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "An Airman shows a one-page tracker that cut a handoff error on their shift. A peer says it makes the old tracker look bad.",
+    "actions": [
+      "File the page in a drawer and never look at the error count.",
+      "Tell them to drop it so the old tracker is not embarrassed.",
+      "Adopt it for the whole wing the same day with no trial.",
+      "Thank them, run the new tracker beside the old one for a week, and keep whichever reduces the error."
+    ],
+    "mostIndex": 3,
+    "leastIndex": 1,
+    "explain": "Fostering innovation protects the person who surfaces a better way and then checks the result. A short side-by-side trial does that. Killing the idea to save face, skipping the trial, or burying the page teaches people to stay quiet.",
+    "source": "AFH 1 (2025) section 16B — Fostering Innovation.",
+    "competency": "Fostering Innovation",
+    "category": "Developing Ideas",
+    "cite": {
+      "chapter": 16,
+      "section": "16B",
+      "para": "16B",
+      "paragraph": "16B",
+      "title": "Fostering Innovation",
+      "pageHint": "306"
+    },
+    "pageHint": 306,
+    "ranks": [
+      "E6"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "sjt",
+      "fostering-innovation"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-040",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A technical sergeant needs supply to change a delivery window. The supply NCO says the published process will not move.",
+    "actions": [
+      "Ignore supply and tell the flight the window already changed.",
+      "Show the mission impact of the current window and ask which step they can shift without breaking their own standard.",
+      "Threaten to elevate it before explaining the impact.",
+      "Accept the published window and say nothing to the flight."
+    ],
+    "mostIndex": 1,
+    "leastIndex": 2,
+    "explain": "Influence moves people toward a sound course with the facts in view. Showing the impact and inviting a legal shift does that. A threat, silence, or a false announcement skips the other person's standard.",
+    "source": "AFH 1 (2025) section 16C — Influence.",
+    "competency": "Influence",
+    "category": "Developing Ideas",
+    "cite": {
+      "chapter": 16,
+      "section": "16C",
+      "para": "16C",
+      "paragraph": "16C",
+      "title": "Influence",
+      "pageHint": "313"
+    },
+    "pageHint": 313,
+    "ranks": [
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "influence"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-041",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A section chief celebrates that every meeting happened this month. The backlog those meetings were supposed to cut is larger.",
+    "actions": [
+      "Add more meetings so the calendar looks fuller.",
+      "Cancel all tracking and call the month a success.",
+      "Report the meetings as the result and leave the backlog off the slide.",
+      "Retarget the month on the backlog number and keep only the meetings that move it."
+    ],
+    "mostIndex": 3,
+    "leastIndex": 0,
+    "explain": "Results focus measures the outcome the work was for. The backlog is that outcome. More meetings, a slide that hides the backlog, or no tracking at all scores the activity instead.",
+    "source": "AFH 1 (2025) para 13.5 — Results Focus.",
+    "competency": "Results Focus",
+    "category": "Developing Organizations",
+    "cite": {
+      "chapter": 13,
+      "section": "13A",
+      "para": "13.5",
+      "paragraph": "13.5",
+      "title": "Results Focus",
+      "pageHint": "246"
+    },
+    "pageHint": 246,
+    "ranks": [
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "results-focus"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-042",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A shop can send two people to a course that will not be offered again this year, or send six people to a shorter local class that covers the same gap at a basic level.",
+    "actions": [
+      "Send all six to the local class without checking whether it covers the task.",
+      "Compare which option closes the shop's gap for the next year, including who can teach the others afterward.",
+      "Send nobody and wait for a perfect course.",
+      "Send the two friends who asked first and skip the comparison."
+    ],
+    "mostIndex": 1,
+    "leastIndex": 3,
+    "explain": "Strategic thinking looks past the first request to the gap the shop will still have next year. Comparing the options, including who can teach the rest, is that look. Friends first, waiting forever, or an unchecked class are shorter views.",
+    "source": "AFH 1 (2025) para 13.3 — Strategic Thinking.",
+    "competency": "Strategic Thinking",
+    "category": "Developing Organizations",
+    "cite": {
+      "chapter": 13,
+      "section": "13A",
+      "para": "13.3",
+      "paragraph": "13.3",
+      "title": "Strategic Thinking",
+      "pageHint": "246"
+    },
+    "pageHint": 246,
+    "ranks": [
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "strategic-thinking"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-043",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A unit is about to buy a second set of test kits because the first set is always missing. A walkthrough finds the kits in three lockers with no sign-out.",
+    "actions": [
+      "Put the kits on one sign-out, use what is already bought, and cancel the duplicate order.",
+      "Write a memo about waste and still place the order.",
+      "Buy the second set and leave the lockers unsorted.",
+      "Hide the kits so only one shift can find them."
+    ],
+    "mostIndex": 0,
+    "leastIndex": 2,
+    "explain": "Resource management uses what the unit already has before it spends again. A sign-out and a canceled reorder do that. Buying a duplicate, hiding the kits, or memo-and-spend anyway burns the account.",
+    "source": "AFH 1 (2025) para 13.6 — Resource Management.",
+    "competency": "Resource Management",
+    "category": "Developing Organizations",
+    "cite": {
+      "chapter": 13,
+      "section": "13B",
+      "para": "13.6",
+      "paragraph": "13.6",
+      "title": "Resource Management",
+      "pageHint": "249"
+    },
+    "pageHint": 249,
+    "ranks": [
+      "E6"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "sjt",
+      "resource-management"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-044",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A status slide rounds a 92 percent rate to about 100 so the brief looks clean. The commander will use the number to decide overtime.",
+    "actions": [
+      "Show 92 percent and the definition behind it before the decision.",
+      "Brief about 100 because the room prefers a round number.",
+      "Leave the number off the slide and say the rate is fine.",
+      "Change the formula until the slide reads 100."
+    ],
+    "mostIndex": 0,
+    "leastIndex": 1,
+    "explain": "Precision means the figure matches the record the decision depends on. Showing 92 percent and what it counts does that. Rounding up, hiding the number, or rewriting the formula to flatter the slide does not.",
+    "source": "AFH 1 (2025) para 15.1 — Precision.",
+    "competency": "Precision",
+    "category": "Developing Self",
+    "cite": {
+      "chapter": 15,
+      "section": "15A",
+      "para": "15.1",
+      "paragraph": "15.1",
+      "title": "Precision",
+      "pageHint": "279"
+    },
+    "pageHint": 279,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "sjt",
+      "precision"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-045",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A new tasking quotes a paragraph the shop cannot find in the instruction on the share drive. A coworker says the quote sounds right.",
+    "actions": [
+      "Complete the tasking and look up the paragraph only if someone complains.",
+      "Ask the room who feels sure and go with the majority.",
+      "Open the current publication, find the paragraph, and compare the tasking to the words on the page.",
+      "Treat the coworker's memory as the publication."
+    ],
+    "mostIndex": 2,
+    "leastIndex": 3,
+    "explain": "Information seeking goes and gets the missing fact. The current publication is that fact. Memory, a vote, or doing the work first and reading later leaves the gap in place.",
+    "source": "AFH 1 (2025) section 16D — Information Seeking.",
+    "competency": "Information Seeking",
+    "category": "Developing Ideas",
+    "cite": {
+      "chapter": 16,
+      "section": "16D",
+      "para": "16D",
+      "paragraph": "16D",
+      "title": "Information Seeking",
+      "pageHint": "318"
+    },
+    "pageHint": 318,
+    "ranks": [
+      "E6"
+    ],
+    "difficulty": 2,
+    "tags": [
+      "sjt",
+      "information-seeking"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  },
+  {
+    "id": "sjt-046",
+    "kind": "sjt",
+    "type": "sjt",
+    "scenario": "A troop wants to store official personally identifiable information from a personnel roster in a personal notes app so they can work from a private phone on the weekend.",
+    "actions": [
+      "Help them export the roster into the personal app so the weekend is easier.",
+      "Stop the download and point them to the approved system for that roster.",
+      "Ignore it because the phone is privately owned.",
+      "Tell them to crop out the names and keep the rest of the roster in the app."
+    ],
+    "mostIndex": 1,
+    "leastIndex": 0,
+    "explain": "Digital literacy here means official information stays in the system approved for it. Stopping the download and pointing to that system does the job. A personal app, a cropped copy, or a private phone does not make the roster personal data.",
+    "source": "AFH 1 (2025) para 15.9 — Digital Literacy.",
+    "competency": "Digital Literacy",
+    "category": "Developing Self",
+    "cite": {
+      "chapter": 15,
+      "section": "15B",
+      "para": "15.9",
+      "paragraph": "15.9",
+      "title": "Digital Literacy",
+      "pageHint": "284"
+    },
+    "pageHint": 284,
+    "ranks": [
+      "E5",
+      "E6"
+    ],
+    "difficulty": 3,
+    "tags": [
+      "sjt",
+      "digital-literacy"
+    ],
+    "sourceEdition": "AFH1-2025",
+    "demo": false
+  }
+]

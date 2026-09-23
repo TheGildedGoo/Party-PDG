@@ -1,0 +1,145 @@
+{
+  "correct": {
+    "mild": [
+      "There it is. That is the paragraph. Put it in your hip pocket.",
+      "Correct. The handbook agrees with you, which is a pleasant change.",
+      "You recalled the cite, not the vibe. That is the job.",
+      "Clean lock. Write that one on a sticky note.",
+      "Right answer. The room can unclench.",
+      "That is the sentence. Do not upgrade it in the retelling.",
+      "Good. You studied the page, not the rumor.",
+      "Locked and legal. Next item."
+    ],
+    "chief": [
+      "There it is. Hip pocket. Do not loan it to a bad summary.",
+      "Correct. I almost smiled. Do not get used to it.",
+      "You brought the paragraph, not a motivational poster.",
+      "That recall was sharp enough to cut a bad excuse.",
+      "Right. The coffee was not wasted on you.",
+      "You remembered the words the book actually used. Outstanding novelty.",
+      "Clean. If the rest of the flight copies you, we go home early.",
+      "That is the standard. Act like you have met it before."
+    ]
+  },
+  "wrong": {
+    "mild": [
+      "Confident. Wrong. The chapter is not a vibe.",
+      "Close to a nearby paragraph, which is how these misses happen.",
+      "That choice would fail a open-book check. We are doing better than that.",
+      "Not the cite. The distractor was dressed up and you saluted it.",
+      "Wrong lock. The explanation is on the screen. Read it once.",
+      "The handbook did not say that. Your memory edited it.",
+      "Miss. We will see this chapter again if it keeps winning.",
+      "Incorrect. The right line is shorter than the story you told yourself."
+    ],
+    "chief": [
+      "Confident. Wrong. Chapter knowledge is not a personality trait.",
+      "You picked the cousin of the right answer and called it family.",
+      "That lock was fast and fictional. Speed is not a cite.",
+      "Wrong. The book has been patient. I am less so.",
+      "You answered the question you wish we had asked.",
+      "Miss. Put the paragraph back where you found the rumor.",
+      "Incorrect. Sloppy recall is still sloppy when the room laughs.",
+      "That was a sister-service answer wearing our colors. Take it off."
+    ]
+  },
+  "fibfool": {
+    "mild": [
+      "That lie picked up votes. The handbook did not.",
+      "People bought it. That is why we show the cite after.",
+      "Nice bluff. It is still not policy.",
+      "The room promoted a fake. We are demoting it now.",
+      "Believable and false. That is the dangerous kind."
+    ],
+    "chief": [
+      "You just promoted a lie to policy. Outstanding.",
+      "The flight saluted a sentence you invented. Fix your face.",
+      "That bluff had better handwriting than the truth. Still fake.",
+      "Congratulations. You wrote unofficial guidance and people believed you.",
+      "A clean lie. The paragraph is here to embarrass it."
+    ]
+  },
+  "fibtruth": {
+    "mild": [
+      "You found the real line. That is the whole point of the round.",
+      "Truth located. The liars can sit down.",
+      "That one is the handbook. The others were confident fiction.",
+      "Correct source. Read the cite out loud once."
+    ],
+    "chief": [
+      "You spotted the real sentence in a pile of swagger. Good eye.",
+      "Handbook wins. The liars can brief their creativity later.",
+      "That was the actual line. Try to remember it longer than the joke.",
+      "Truth pays more. That was not an accident."
+    ]
+  },
+  "join": {
+    "mild": [
+      "Another phone is on the net. Callsign is live.",
+      "Welcome in. Pick a brain, not just an avatar.",
+      "Checked in. The room code worked. Miracles continue."
+    ],
+    "chief": [
+      "Another volunteer. The paragraph does not care about your confidence.",
+      "You are in. Try not to guess like it is a personality.",
+      "Joined. I already miss the quiet."
+    ]
+  },
+  "win": {
+    "mild": [
+      "Board is closed. Winner keeps the coffee, loser keeps the cite.",
+      "That is the score. Hot wash is optional only if you were honest.",
+      "Done. Screenshot nothing. Study the misses."
+    ],
+    "chief": [
+      "Winner buys nothing. Loser rereads the chapter that hurt.",
+      "Scores posted. Bragging is authorized. Forgetting is not.",
+      "Game over. The handbook is still undefeated."
+    ]
+  },
+  "lightning": {
+    "mild": [
+      "Break time. Water, then back on the clock.",
+      "Five down. Shake out your hands.",
+      "Pause. Combo can wait eight seconds while you breathe."
+    ],
+    "chief": [
+      "Break time. Do not study your neighbor's face.",
+      "Pause. If your combo died, that was the question's fault and also yours.",
+      "Five items. Stretch. The next five are not nicer."
+    ]
+  },
+  "sjt": {
+    "mild": [
+      "Score the behavior, not the speech you would give later.",
+      "Most and least are both graded. A swap is a zero.",
+      "Use the competency on purpose."
+    ],
+    "chief": [
+      "That least-effective move was a choice. Own it.",
+      "Competency language, not vibes. The rubric is not your mood.",
+      "You ranked a dodge above the repair. We noticed."
+    ]
+  },
+  "hotwash": {
+    "mild": [
+      "Same chapters. Cleaner answers. That is the deal."
+    ],
+    "chief": [
+      "We are not leaving this room until that chapter stops beating you."
+    ]
+  },
+  "dares": [
+    "Optional: ten push-ups, or recite the first stanza of the Airman's Creed. The host can skip this.",
+    "Optional: the lowest score names the chapter they will reread tonight. Skip if the room is done.",
+    "Optional: everyone stands for one breath and sits back down. Courage was not required. Skip is allowed.",
+    "Optional: winner picks a paragraph number. Loser says the title only. Skip if you want the next item."
+  ],
+  "nicks": [
+    "Tabbed for Later",
+    "Closed Book",
+    "Needs a Refly",
+    "Page Marker",
+    "Bold Guess"
+  ]
+}

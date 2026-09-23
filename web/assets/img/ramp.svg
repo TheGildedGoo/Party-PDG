@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-label="Night flight line illustration">
+<defs>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0" stop-color="#07141f"/><stop offset="1" stop-color="#1a3a55"/>
+</linearGradient>
+</defs>
+<rect width="1600" height="900" fill="url(#sky)"/>
+<g fill="#f5a623" opacity="0.85">
+<circle cx="180" cy="120" r="2"/><circle cx="420" cy="80" r="1.5"/><circle cx="700" cy="140" r="2"/>
+<circle cx="980" cy="60" r="1.4"/><circle cx="1200" cy="160" r="2"/><circle cx="1460" cy="90" r="1.6"/>
+</g>
+<path d="M0 640 L1600 560 L1600 900 L0 900 Z" fill="#0b1c2c"/>
+<g stroke="#f5a623" stroke-width="3" fill="none" opacity="0.7">
+<path d="M80 700 H1520"/><path d="M80 760 H1520"/><path d="M200 700 V820"/><path d="M520 690 V830"/><path d="M980 680 V840"/>
+</g>
+<g fill="#12283c" stroke="#8fbf9f" stroke-width="2">
+<path d="M260 690 L430 650 L760 668 L740 710 Z"/>
+<path d="M1040 700 L1280 640 L1460 690 L1400 730 Z"/>
+</g>
+<g fill="#f5a623">
+<circle cx="300" cy="720" r="4"/><circle cx="640" cy="730" r="4"/><circle cx="1100" cy="740" r="4"/><circle cx="1420" cy="750" r="3"/>
+</g>
+</svg>
