@@ -91,7 +91,7 @@
     }
     if (existing) {
       existing.connected = true;
-      if (raw.name) existing.name = String(raw.name).slice(0, 18);
+      if (raw.name) existing.name = String(raw.name).slice(0, 20);
       if (raw.avatar) existing.avatar = raw.avatar;
       this.emit();
       return existing;
@@ -100,7 +100,7 @@
     var audience = !!raw.audience || late || this.active().length >= 8;
     var player = {
       id: raw.id,
-      name: String(raw.name || "Airman").slice(0, 18),
+      name: String(raw.name || "Airman").slice(0, 20),
       avatar: raw.avatar || "open-book",
       score: 0,
       combo: 0,
@@ -410,6 +410,7 @@
       teamLocked: !!this.answers["team-" + this.turnTeam],
       answered: Object.keys(this.answers),
       settings: { roast: this.settings.roast, rank: this.settings.rank },
+      hostName: this.hostLabel || "",
       youAnswered: !!(pid && this.answers[pid]),
       joinUrl: this.joinUrl
     };

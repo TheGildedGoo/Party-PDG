@@ -1,4 +1,12 @@
 {
+  "framework": null,
+  "buildCommand": "npm run build",
+  "outputDirectory": ".",
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 30
+    }
+  },
   "rewrites": [
     { "source": "/play", "destination": "/play.html" },
     { "source": "/play/", "destination": "/play.html" }

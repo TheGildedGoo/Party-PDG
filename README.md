@@ -2,7 +2,7 @@
 
 Unofficial study party for AFH 1, *The Airman* (15 February 2025). One computer is the TV. Phones on the same Wi-Fi are the controllers. It plays like a living-room game: Boards & Brief, Decoy Brief, a lightning round, flights versus flights, situational judgment, and a solo study desk. Every mode in the bank is multiple choice.
 
-This is **not** an Air Force product, **not** a substitute for AFH 1, and **not** a source the Air Force uses to write the PFE. Promotion-test content is determined solely by the Air Force. Group study for the purpose of enlisted promotion testing is prohibited by DAFMAN 36-2664. Read that again before you put this on a projector at work.
+This is **not** an Air Force product, **not** a substitute for AFH 1, and **not** a source the Air Force uses to write the PFE. Promotion-test content is determined solely by the Air Force. Group study for the purpose of enlisted promotion testing is prohibited by DAFMAN 36-2664. Party-PDG multiplayer runs offline on a local network with anonymous score competition — no named roster and no shared answer key — so we treat it as competitive practice, not group study under that policy. Read that again before you put this on a projector at work.
 
 Questions are original to this project. The handbook is the factual base. Wording is not taken from commercial quiz banks.
 
@@ -93,6 +93,14 @@ Every item is tagged with `kind` (`mcq`, `decoy`, or `sjt`), chapter, section, p
 - Numeric fitness scores are left out on purpose. They change.
 - Illustrations are original drawings. There is no Air Force seal and no Hap Arnold trademark lockup. Rank marks in the game are tokens, not official insignia.
 - After the first visit through the launcher, the service worker can reopen the host and player pages offline. A room still needs the launcher running if phones are joining.
+
+## Accounts, trial, and billing
+
+The Vercel app (`pdg-play`, root directory `web/`) adds a marketing splash, email login, a 30-day $1/month trial, and an admin panel. The Python launcher still runs Quiet Hours and LAN rooms without that API. Setup for Neon, Resend, Stripe, and the admin bootstrap password is in `docs/SAAS.md`.
+
+```bash
+node --test tools/test_saas.mjs
+```
 
 ## Rebuild
 

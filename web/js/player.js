@@ -43,7 +43,8 @@
       "<h1>Join the room</h1>" +
       '<p class="disclaimer">Unofficial study aid. Not an Air Force product. Not a substitute for AFH 1.</p>' +
       '<label class="field">Room code<input id="room" maxlength="4" autocomplete="off" value="' + PDG.esc(ui.room) + '"></label>' +
-      '<label class="field">Callsign<input id="name" maxlength="18" value="' + PDG.esc(ui.name) + '" placeholder="Open Book"></label>' +
+      '<label class="field">' + (ui.nameFromAccount ? "Username" : "Callsign") + '<input id="name" maxlength="20" value="' + PDG.esc(ui.name) + '"' + (ui.nameFromAccount ? " readonly" : "") + ' placeholder="Open Book"></label>' +
+      (ui.nameFromAccount ? '<p class="fine">You show up on the board as your username.</p>' : "") +
       '<div class="avatar-pick">' + avatars + "</div>" +
       '<label class="fine"><input id="aud" type="checkbox"' + (ui.audience ? " checked" : "") + "> Audience only. I can watch, not score.</label>" +
       '<button class="btn amber" id="join" type="button">Join</button>' +
@@ -56,7 +57,8 @@
     var head = '<p class="big-title">' + PDG.esc(st.modeTitle || "Lobby") + "</p>";
     head += "<p>" + PDG.esc((me && me.name) || ui.name) + (me && me.audience ? " · audience" : "") + (me && me.team != null ? " · Flight " + (me.team + 1) : "") + (me && me.captain ? " · Captain" : "") + "</p>";
     if (st.phase === "lobby" || st.phase === "attract" || !st.mode) {
-      return head + '<div class="locked">You are in. Eyes on the host.</div><p class="fine">' + (st.players || []).map(function (p) { return PDG.esc(p.name); }).join(" · ") + "</p>";
+      var hostBit = st.hostName ? '<p class="fine">Host · ' + PDG.esc(st.hostName) + "</p>" : "";
+      return head + hostBit + '<div class="locked">You are in. Eyes on the host.</div><p class="fine">' + (st.players || []).map(function (p) { return PDG.esc(p.name); }).join(" · ") + "</p>";
     }
     if (st.phase === "interstitial" && st.interstitial) {
       return head + "<h1>" + PDG.esc(st.interstitial.title) + "</h1><p>" + PDG.esc(st.interstitial.body) + "</p>";
@@ -164,7 +166,7 @@
 
   function doJoin() {
     ui.room = (document.getElementById("room").value || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
-    ui.name = document.getElementById("name").value || "Airman";
+    ui.name = ui.nameFromAccount ? ui.name : (document.getElementById("name").value || "Airman");
     ui.audience = document.getElementById("aud").checked;
     if (ui.room.length < 4) { ui.error = "Room codes are 4 characters."; render(); return; }
     saveSession();
@@ -253,6 +255,19 @@
     navigator.serviceWorker.register("sw.js").catch(function () {});
   }
   render();
+  if (location.protocol !== "file:") {
+    fetch("/api/auth/me", { credentials: "same-origin", headers: { accept: "application/json" } }).then(function (res) {
+      var type = res.headers.get("content-type") || "";
+      if (type.indexOf("json") === -1) return null;
+      return res.json();
+    }).then(function (data) {
+      var name = data && data.user && data.user.username;
+      if (!name || ui.linked) return;
+      ui.name = String(name).slice(0, 20);
+      ui.nameFromAccount = true;
+      render();
+    }).catch(function () { /* local relay has no account API */ });
+  }
   if (ui.room && params.get("room")) {
     /* stay on the join form so they confirm a callsign, but the code is filled in */
   }
