@@ -424,8 +424,8 @@
       '<p class="disclaimer">Unofficial study aid. Not an Air Force product, not a substitute for AFH 1, and not a source the Air Force uses to write the PFE. Promotion test content is determined solely by the Air Force. Group study for the purpose of enlisted promotion testing is prohibited by DAFMAN 36-2664.</p>' +
       '<p class="disclaimer">Party-PDG multiplayer runs offline on a local network with anonymous score competition — no named roster and no shared answer key — so we treat it as competitive practice, not group study under that policy.</p>' +
       "<p>This laptop can run the whole session. Phones and a room code are only for a party.</p>" +
-      '<div class="row">' +
-      '<button class="btn amber" id="solo" type="button">Quiet Hours</button>' +
+      '<div class="row setup-actions">' +
+      modePick("solo", "amber", "Quiet Hours", "Solo desk study. Spaced flashcards from AFH 1; grades how well you know each card.") +
       '<button class="btn" id="host" type="button">Host a party</button>' +
       "</div>" +
       '<p class="fine">Quiet Hours stays on this computer. Phones join only after you host a room.</p>' +
@@ -459,16 +459,18 @@
       '<p class="kicker">Party lobby</p><h2>Same Wi-Fi. Type the code.</h2>' +
       '<p class="disclaimer">Unofficial study aid. Not an Air Force product, not a substitute for AFH 1. PFE content is determined solely by the Air Force.</p>' +
       '<div class="grid-2"><div>' +
-      '<div class="row">' +
+      '<div class="row setup-fields">' +
       fieldRank(s.rank) + fieldRounds(s.rounds) + fieldRoast(s.roast) + fieldFlights(s.flights) +
       "</div>" +
       '<label class="field"><span>Demo seed</span><select id="demo"><option value="no"' + (s.demo ? "" : " selected") + '>Full bank</option><option value="yes"' + (s.demo ? " selected" : "") + ">3-minute demo</option></select></label>" +
+      '<div class="mode-picks">' +
+      modePick("go-boards", "amber", "Boards & Brief", "Classic multiple choice. Race for the right answer; speed helps in a party.") +
+      modePick("go-decoy", "", "Decoy Brief", "Spot the real handbook line among three authored fakes. Party: sponsor a fake, then vote.") +
+      modePick("go-light", "", "Lightning", "Fast streak run. Keep a combo going; misses mark weak chapters.") +
+      modePick("go-teams", "", "Flight vs Flight", "Team captains lock answers; a miss opens a short steal. Solo plays like Boards.") +
+      modePick("go-sjt", "", "SJT Brief", "Same scenario twice: pick most effective, then least. Swap scores zero.") +
+      "</div>" +
       '<div class="row">' +
-      '<button class="btn amber" id="go-boards" type="button">Boards & Brief</button>' +
-      '<button class="btn" id="go-decoy" type="button">Decoy Brief</button>' +
-      '<button class="btn" id="go-light" type="button">Lightning</button>' +
-      '<button class="btn" id="go-teams" type="button">Flight vs Flight</button>' +
-      '<button class="btn" id="go-sjt" type="button">SJT Brief</button>' +
       '<button class="btn ghost" id="go-hot" type="button">Hot Wash</button>' +
       '<button class="btn ghost" id="go-demo" type="button">3-minute brief</button>' +
       "</div>" +
@@ -490,12 +492,17 @@
     }).join("") + "</select></label>";
   }
   function fieldRoast(v) {
-    return '<label class="field">Roast<select id="roast">' + opt("mild", "Mild", v) + opt("chief", "Chief", v) + "</select></label>";
+    return '<label class="field">Roast<select id="roast">' + opt("mild", "Mild", v) + opt("chief", "Chief", v) + '</select><span class="fine">Banter spice after reveals. Mild = light ribbing; Chief = sharper. Study content stays the same; only the host lines change.</span></label>';
   }
   function fieldFlights(v) {
     return '<label class="field">Flights<select id="flights">' + [2, 3, 4].map(function (n) {
       return '<option' + (Number(v) === n ? " selected" : "") + ">" + n + "</option>";
-    }).join("") + "</select></label>";
+    }).join("") + '</select><span class="fine">How many teams share the room (2–4). Captains lock; used by Flight vs Flight. Solo ignores this.</span></label>';
+  }
+  function modePick(id, extra, label, help) {
+    var cls = extra ? "btn " + extra : "btn";
+    var helpId = id + "-help";
+    return '<div class="mode-pick"><button class="' + cls + '" id="' + id + '" type="button" aria-describedby="' + helpId + '">' + label + '</button><p class="fine" id="' + helpId + '">' + help + "</p></div>";
   }
   function opt(value, label, current) {
     return '<option value="' + value + '"' + (current === value ? " selected" : "") + ">" + label + "</option>";

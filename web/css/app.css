@@ -217,6 +217,23 @@ h2 { font-size: clamp(36px, 4vw, 64px); }
 }
 body.host .disclaimer { font-size: 18px; }
 .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.setup-fields, .setup-actions { align-items: flex-start; }
+.setup-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.setup-fields > .field { min-width: 0; }
+.setup-fields select { width: 100%; }
+.mode-picks { display: flex; flex-direction: column; gap: 8px; }
+.mode-pick {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px 12px;
+  align-items: center;
+  min-width: 0;
+}
+.mode-pick .fine, label.field > .fine { margin: 0; font-size: 15px; line-height: 1.25; max-width: none; }
 .grid-2 { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 18px; }
 label.field { display: flex; flex-direction: column; gap: 6px; font-size: 18px; min-width: 140px; }
 select, input[type="text"], input[type="email"], input[type="password"], input[type="number"], input[type="datetime-local"], textarea {
@@ -354,6 +371,7 @@ body.player .big-title { font-family: var(--display); font-size: 28px; letter-sp
   .stage { grid-template-columns: 1fr; }
   .chief { max-height: 180px; }
   .grid-2 { grid-template-columns: 1fr; }
+  .setup-fields { grid-template-columns: 1fr 1fr; }
   .choices.reveal-lines { grid-template-columns: 1fr; }
   .bubble { font-size: 18px; }
 }
