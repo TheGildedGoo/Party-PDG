@@ -132,26 +132,15 @@
     return "assets/img/chief-idle.svg";
   }
 
-  function withDecoys(bundle) {
-    bundle.decoys = bundle.decoys || [];
-    return fetch("data/decoys.json").then(function (r) {
-      if (!r.ok) return bundle;
-      return r.json().then(function (rows) {
-        if (rows && rows.length) bundle.decoys = rows;
-        return bundle;
-      });
-    }).catch(function () { return bundle; });
-  }
-
   function loadBank() {
-    if (window.PDG_BUNDLE) return withDecoys(window.PDG_BUNDLE);
+    if (window.PDG_BUNDLE) return Promise.resolve(window.PDG_BUNDLE);
     return Promise.all([
       fetch("data/questions.json").then(function (r) { return r.json(); }),
       fetch("data/sjt.json").then(function (r) { return r.json(); }),
       fetch("data/lines.json").then(function (r) { return r.json(); }),
       fetch("data/chapters.json").then(function (r) { return r.json(); })
     ]).then(function (parts) {
-      return withDecoys({ questions: parts[0], sjt: parts[1], lines: parts[2], chapters: parts[3], decoys: [] });
+      return { questions: parts[0], sjt: parts[1], lines: parts[2], chapters: parts[3], decoys: [] };
     });
   }
 

@@ -1,4 +1,4 @@
-var VERSION = "pdg-party-v5";
+var VERSION = "pdg-party-v6";
 var CORE = [
   "/",
   "/index.html",
@@ -25,7 +25,6 @@ var CORE = [
   "/data/sjt.json",
   "/data/lines.json",
   "/data/chapters.json",
-  "/data/decoys.json",
   "/data/demo.json",
   "/assets/barlow-condensed-700.woff2",
   "/assets/source-sans-3-400.woff2",
