@@ -1,4 +1,4 @@
-var VERSION = "pdg-party-v6";
+var VERSION = "pdg-party-v7";
 var CORE = [
   "/",
   "/index.html",

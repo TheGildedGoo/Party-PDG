@@ -265,7 +265,7 @@
     captureReveal();
     if (game.phase === "results") finalizeSession();
     var key = [
-      ui.screen, ui.wager, ui.hostSjt, ui.notice, (ui.toasts || []).length,
+      ui.screen, ui.party ? 1 : 0, ui.wager, ui.hostSjt, ui.notice, (ui.toasts || []).length,
       game.phase, game.index, game.subphase, game.reveal ? 1 : 0, game.steal ? 1 : 0,
       game.turnTeam, game.players.length, Object.keys(game.answers || {}).length,
       game.interstitial ? 1 : 0, ui.streak
@@ -293,15 +293,12 @@
   function shell(inner) {
     var muteLabel = PDG.audio.muted ? "Sound off" : "Sound on";
     var quietLabel = PDG.audio.quiet ? "Quiet on" : "Quiet mode";
-    var pill = ui.party
-      ? '<div class="roompill">ROOM ' + PDG.esc(game.room) + "</div>"
-      : '<div class="roompill">SOLO</div>';
     return '' +
       '<div class="sky tv-safe">' +
       '<div class="hazard"></div>' +
       '<header class="topbar">' +
       '<div class="brand">PDG <span>PARTY</span></div>' +
-      pill +
+      modeSwitchHTML() +
       '<div class="top-actions">' +
       '<button class="icon-btn" id="mute" type="button">' + PDG.esc(muteLabel) + "</button>" +
       '<button class="icon-btn" id="quiet" type="button">' + PDG.esc(quietLabel) + "</button>" +
@@ -312,6 +309,16 @@
       '<footer class="scorestrip" id="scores">' + scoreHTML() + "</footer>" +
       toastHTML() +
       "</div>";
+  }
+
+  function modeSwitchHTML() {
+    var soloOn = !ui.party;
+    var room = ui.party ? '<div class="roompill">ROOM ' + PDG.esc(game.room) + "</div>" : "";
+    return '<div class="mode-switch">' +
+      '<div class="mode-toggle" role="group" aria-label="Solo or multiplayer">' +
+      '<button type="button" id="mode-solo" aria-pressed="' + (soloOn ? "true" : "false") + '">Solo</button>' +
+      '<button type="button" id="mode-party" aria-pressed="' + (soloOn ? "false" : "true") + '">Multiplayer</button>' +
+      "</div>" + room + "</div>";
   }
 
   function toastHTML() {
@@ -970,6 +977,105 @@
     render();
   }
 
+  function copySettings(soloFlag) {
+    return {
+      rank: game.settings.rank,
+      rounds: game.settings.rounds,
+      roast: game.settings.roast,
+      flights: game.settings.flights,
+      demo: !!game.settings.demo,
+      solo: !!soloFlag
+    };
+  }
+
+  function resumePausedClock() {
+    if (ui.mock && ui.mock.pausedAt) {
+      ui.mock.started += Date.now() - ui.mock.pausedAt;
+      ui.mock.pausedAt = 0;
+    }
+  }
+
+  function landSolo(preferRollup) {
+    resumePausedClock();
+    if (ui.mock && !ui.mock.done) {
+      ui.screen = "mock";
+      if (!ui.session || ui.session.closed || ui.session.modeId !== "mock") {
+        openSession("mock");
+        ui.session.track = ui.mock.track || game.settings.rank;
+      }
+      return;
+    }
+    if (ui.solo && ui.solo.current) {
+      ui.screen = "solo";
+      if (!ui.session || ui.session.closed || ui.session.modeId !== "quiet") {
+        openSession("quiet");
+        ui.session.track = ui.solo.track || game.settings.rank;
+      }
+      ui.shownAt = Date.now();
+      return;
+    }
+    if (preferRollup && ui.stats) {
+      ui.screen = "rollup";
+      return;
+    }
+    var prior = ui.solo || {};
+    ui.screen = "solo";
+    ui.solo = { track: prior.track || game.settings.rank || "E5" };
+    if (prior.chapter) ui.solo.chapter = prior.chapter;
+    if (prior.empty) ui.solo.empty = prior.empty;
+  }
+
+  function enterMultiplayer() {
+    if (ui.party) return;
+    var settings = copySettings(false);
+    var rankEl = $("solo-rank");
+    var chapterEl = $("solo-chapter");
+    if (rankEl && rankEl.value) {
+      settings.rank = rankEl.value;
+      if (ui.solo && !ui.solo.current) ui.solo.track = rankEl.value;
+    }
+    if (chapterEl && ui.solo && !ui.solo.current) {
+      ui.solo.chapter = chapterEl.value && chapterEl.value !== "all" ? Number(chapterEl.value) : null;
+    }
+    if (ui.session && !ui.session.closed && ui.attempts.length) finalizeSession();
+    else if (ui.session && !ui.session.closed) ui.session = null;
+    if (ui.mock && !ui.mock.done) ui.mock.pausedAt = Date.now();
+    ui.party = true;
+    ui.screen = "lobby";
+    ui.notice = "";
+    ui.error = "";
+    ui.wager = null;
+    game.players = game.players.filter(function (p) { return p.id !== "host-seat"; });
+    game.hostLine = "Same Wi-Fi. Phones join with the room code.";
+    game.toLobby();
+    game.configure(settings);
+    connectHost();
+    refreshJoin();
+    render();
+  }
+
+  function leaveMultiplayer() {
+    if (!ui.party) return;
+    var settings = copySettings(true);
+    var partySession = ui.session && !ui.session.closed && ui.session.modeId !== "quiet" && ui.session.modeId !== "mock";
+    var rolled = false;
+    if (partySession && ui.attempts.length) {
+      finalizeSession();
+      rolled = true;
+    } else if (partySession) ui.session = null;
+    closePartyLink();
+    ui.error = "";
+    ui.notice = "";
+    ui.wager = null;
+    ui.hostSjt = null;
+    game.players = [];
+    landSolo(rolled);
+    game.hostLine = "Quiet Hours. This screen is the whole session.";
+    game.configure(settings);
+    game.toLobby();
+    render();
+  }
+
   function playSolo(mode, opts) {
     closePartyLink();
     ui.notice = "";
@@ -980,20 +1086,6 @@
     var track = soloTrack();
     game.configure({ rank: track, solo: true });
     begin(mode, Object.assign({ rank: track }, opts || {}));
-  }
-
-  function startParty() {
-    if (ui.session && !ui.session.closed && ui.attempts.length) finalizeSession();
-    ui.party = true;
-    ui.screen = "lobby";
-    ui.notice = "";
-    ui.error = "";
-    game.toLobby();
-    game.players = game.players.filter(function (p) { return p.id !== "host-seat"; });
-    game.hostLine = "Same Wi-Fi. Phones join with the room code.";
-    connectHost();
-    refreshJoin();
-    render();
   }
 
   function emptyCopy(kind) {
@@ -1148,8 +1240,14 @@
 
   function bind() {
     var map = {
-      host: startParty,
+      host: enterMultiplayer,
+      "mode-party": enterMultiplayer,
+      "mode-solo": leaveMultiplayer,
       solo: function () {
+        if (ui.party) {
+          leaveMultiplayer();
+          return;
+        }
         closePartyLink();
         ui.screen = "solo";
         ui.solo = { track: soloTrack() };

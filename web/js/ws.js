@@ -51,6 +51,7 @@
       ws = socket;
       var opened = false;
       ws.onmessage = function (ev) {
+        if (closed || gen !== generation) return;
         var msg;
         try { msg = JSON.parse(ev.data); } catch (e) { return; }
         if (msg.op === "welcome") emit("welcome", msg);
@@ -102,6 +103,7 @@
       bc = new BroadcastChannel("pdg-party");
       var id = opts.localId || ("local-" + Math.random().toString(16).slice(2, 8));
       bc.onmessage = function (ev) {
+        if (closed) return;
         var msg = ev.data || {};
         if (msg.room && msg.room !== room) return;
         if (msg.op === "hello" && role === "host" && msg.role !== "host") {
