@@ -33,7 +33,7 @@
     ingest: function (game, player, act) {
       if (player.audience || act.type !== "sjt") return;
       if (act.most == null || act.least == null || act.most === act.least) return;
-      game.answers[player.id] = { most: act.most, least: act.least };
+      game.answers[player.id] = { most: act.most, least: act.least, at: Date.now() };
     },
     complete: function (game) {
       var actives = game.active();
@@ -42,11 +42,24 @@
     score: function (game) {
       var item = game.current;
       var deltas = {};
+      var grades = {};
       var missed = false;
+      var total = (game.roundSeconds || 45) * 1000;
+      var started = game.deadline - total;
+      var cite = item.cite || {};
       game.active().forEach(function (p) {
         var a = game.answers[p.id] || {};
         var pts = PDG.sjtPoints(item.mostIndex, item.leastIndex, a.most, a.least);
         deltas[p.id] = pts;
+        grades[p.id] = {
+          correct: pts === 1000,
+          latencyMs: a.at ? Math.max(0, a.at - started) : total,
+          wager: 0,
+          wagerDelta: 0,
+          itemId: item.id,
+          chapter: PDG.chapterOf(item),
+          section: cite.section || ""
+        };
         if (pts < 1000) missed = true;
       });
       if (missed) game.noteChapterMiss(item);
@@ -59,6 +72,7 @@
         source: item.explain,
         competency: item.competency,
         deltas: deltas,
+        grades: grades,
         bucket: "sjt"
       };
     }

@@ -54,4 +54,72 @@ assert(L.matchesTrack({ ranks: ["E5", "E6"] }, "E5") === true, "shared item on e
 assert(L.WAPS.e5.length === 15, "fifteen e5 chapters");
 assert(L.WAPS.e6Only.join() === "13,16", "e6 only chapters");
 
+assert(L.wagerPoints(true, 100, 0) === 100, "wager 0 still pays base");
+assert(L.wagerPoints(true, 100, 1) === 100, "wager 1 pays base");
+assert(L.wagerPoints(true, 100, 2) === 200, "wager 2 doubles boards base");
+assert(L.wagerPoints(false, 100, 3) === -300, "wrong costs base times wager");
+assert(L.wagerPoints(true, 50, 3) === 150, "lightning-style base times wager");
+assert(L.clampWager(9) === 3 && L.clampWager(null) === 0, "wager clamps");
+
+var decoyOpts = L.buildDecoyOptions(
+  { truth: "Handbook line", decoys: ["Lie A", "Lie B", "Lie C"] },
+  function () { return 0; }
+);
+assert(decoyOpts.length === 4, "decoy stack is four");
+assert(decoyOpts.filter((o) => o.truth).length === 1, "one truth");
+assert(decoyOpts.filter((o) => !o.truth).length === 3, "exactly three decoys");
+assert(
+  decoyOpts.map((o) => o.text).slice().sort().join("|") === ["Handbook line", "Lie A", "Lie B", "Lie C"].sort().join("|"),
+  "decoy texts preserved"
+);
+assert(L.buildDecoyOptions({ truth: "x", decoys: ["only"] }).length === 0, "reject a short decoy list");
+
+var attempts = [];
+for (var i = 0; i < 5; i++) {
+  attempts.push({ playerId: "p", id: "m" + i, chapter: 9, section: "9.4", correct: i < 2, latencyMs: 1000, wagerDelta: i < 2 ? 100 : -100, wager: 1 });
+}
+for (var j = 0; j < 5; j++) {
+  attempts.push({ playerId: "p", id: "n" + j, chapter: 1, section: "1C", correct: true, latencyMs: 500, wagerDelta: 100, wager: 0 });
+}
+var stats = L.buildSessionStats({
+  sessionId: "s",
+  endedAt: "2026-09-23T00:00:00.000Z",
+  modeId: "boards",
+  rankTrack: "E5",
+  solo: true,
+  attempts: attempts,
+  achievementsUnlocked: ["first-light"]
+});
+assert(stats.schemaVersion === 1, "schema version 1");
+assert(stats.totals.answered === 10 && stats.totals.correct === 7, "totals");
+assert(stats.totals.wagerNet === 400, "wager net");
+assert(stats.focusRollup.recommendedNext[0] === 9, "worst chapter first");
+assert(stats.focusRollup.recommendedNext.length === 2, "two chapters cleared the n>=5 bar");
+assert(stats.byChapter[0].chapter === 1 && stats.byChapter[0].missIds.length === 0, "chapter group");
+assert(stats.byChapter[1].missIds.length === 3, "miss ids");
+assert(stats.achievementsUnlocked[0] === "first-light", "achievements pass through");
+
+var fresh = L.evaluateAchievements({
+  modeId: "boards",
+  attempts: [1, 2, 3, 4, 5].map(function () { return { playerId: "p", correct: true, wager: 3, chapter: 1, section: "1C" }; }),
+  already: [],
+  priorAnswered: 0,
+  cardsStudied: 5,
+  dueCount: 0,
+  studyDays: 7,
+  priorWeakChapters: [1]
+});
+["first-light", "queue-zero", "chapter-cleared", "seven-day-desk", "boards-ace", "high-stakes", "weakness-closed"].forEach(function (id) {
+  assert(fresh.indexOf(id) !== -1, "expected " + id);
+});
+var live = L.evaluateAchievements({
+  live: true,
+  liveOnly: ["lightning-streak-10"],
+  modeId: "lightning",
+  comboPeak: 10,
+  attempts: [],
+  already: []
+});
+assert(live.join() === "lightning-streak-10", "live awards stay on the allow list");
+
 console.log("logic ok");

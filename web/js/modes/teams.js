@@ -112,6 +112,23 @@
       if (game._teamMissed) game.noteChapterMiss(item);
       game._teamMissed = false;
       var choice = (PDG.choiceView(item).filter(function (c) { return c.id === correctId; })[0] || {}).text || "";
+      var grades = {};
+      var total = (game.roundSeconds || 25) * 1000;
+      var started = game.deadline - total;
+      var cite = item.cite || {};
+      game.active().forEach(function (p) {
+        if (!game.teamResult || game.teamResult[p.team] == null) return;
+        var lock = game.answers["team-" + p.team] || {};
+        grades[p.id] = {
+          correct: game.teamResult[p.team] === "hit",
+          latencyMs: lock.at ? Math.max(0, lock.at - started) : total,
+          wager: 0,
+          wagerDelta: 0,
+          itemId: item.id,
+          chapter: PDG.chapterOf(item),
+          section: cite.section || ""
+        };
+      });
       return {
         correctId: correctId,
         correctText: choice,
@@ -119,6 +136,8 @@
         cite: item.cite,
         source: item.source || item.explain,
         deltas: deltas,
+        grades: grades,
+        stealSuccess: !!(ok && game.steal),
         bucket: ok ? "correct" : "wrong",
         teamResult: game.teamResult
       };

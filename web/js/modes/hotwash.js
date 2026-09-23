@@ -9,11 +9,21 @@
     autoAdvance: false,
     seconds: 20,
     buildDeck: function (game) {
+      var pool = PDG.filterBank(game.bank.questions, game.settings.rank, "mcq");
+      var rec = (game.focusRollup && game.focusRollup.recommendedNext) || [];
+      if (rec.length) {
+        var fromRollup = pool.filter(function (q) {
+          var ch = PDG.chapterOf(q);
+          return rec.indexOf(ch) !== -1 || rec.indexOf(Number(ch)) !== -1 || rec.indexOf(String(ch)) !== -1;
+        });
+        if (fromRollup.length) {
+          return PDG.shuffle(fromRollup).slice(0, Math.max(4, Math.min(8, game.settings.rounds || 6)));
+        }
+      }
       var ranked = Object.keys(game.misses || {}).map(function (k) {
         return { ch: Number(k), n: game.misses[k] };
       }).sort(function (a, b) { return b.n - a.n; });
       var chapters = ranked.map(function (r) { return r.ch; }).slice(0, 4);
-      var pool = PDG.filterBank(game.bank.questions, game.settings.rank, "mcq");
       var focused = pool.filter(function (q) {
         var ch = PDG.chapterOf(q);
         return chapters.indexOf(ch) !== -1;

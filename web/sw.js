@@ -1,4 +1,4 @@
-var VERSION = "pdg-party-v4";
+var VERSION = "pdg-party-v6";
 var CORE = [
   "/",
   "/index.html",
@@ -16,7 +16,7 @@ var CORE = [
   "/js/player.js",
   "/js/modes/boards.js",
   "/js/modes/lightning.js",
-  "/js/modes/fibbage.js",
+  "/js/modes/decoy.js",
   "/js/modes/sjt.js",
   "/js/modes/teams.js",
   "/js/modes/hotwash.js",

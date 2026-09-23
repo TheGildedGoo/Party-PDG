@@ -45,7 +45,7 @@
       '<label class="field">Room code<input id="room" maxlength="4" autocomplete="off" value="' + PDG.esc(ui.room) + '"></label>' +
       '<label class="field">Callsign<input id="name" maxlength="18" value="' + PDG.esc(ui.name) + '" placeholder="Open Book"></label>' +
       '<div class="avatar-pick">' + avatars + "</div>" +
-      '<label class="fine"><input id="aud" type="checkbox"' + (ui.audience ? " checked" : "") + "> Audience only. I can vote, not bluff.</label>" +
+      '<label class="fine"><input id="aud" type="checkbox"' + (ui.audience ? " checked" : "") + "> Audience only. I can watch, not score.</label>" +
       '<button class="btn amber" id="join" type="button">Join</button>' +
       (ui.error ? '<p class="warn">' + PDG.esc(ui.error) + "</p>" : "");
   }
@@ -71,13 +71,17 @@
       return head + '<div class="cite">' + PDG.esc(st.reveal.citeText || "") + "</div><h1>" + PDG.esc(st.reveal.correctText || "Reveal") + "</h1><p>" + PDG.esc(st.reveal.explain || "") + "</p>" + (st.reveal.leastText ? "<p>Least effective: " + PDG.esc(st.reveal.leastText) + "</p>" : "") + '<p class="fine">' + PDG.esc(st.hostLine || "") + "</p>";
     }
     if (st.phase === "prompt") return head + '<div class="locked">Host is reading it.</div>';
-    if (st.kind === "fibwrite") {
-      var wrote = st.youAnswered || (st.answered || []).indexOf(ui.myId) !== -1;
-      if (wrote) return head + "<h1>" + PDG.esc(st.prompt) + '</h1><div class="locked">Lie is in. Waiting on the flight.</div>';
-      return head + "<h1>" + PDG.esc(st.prompt) + '</h1><label class="field">Your lie<textarea id="fibtext" maxlength="90"></textarea></label><button class="btn amber" id="sendfib" type="button">Lock the lie</button>';
+    if (st.kind === "fibwrite" || st.kind === "fibvote") {
+      return head + '<div class="locked">Free-text rounds are closed. This party is multiple choice.</div>';
     }
-    if (st.kind === "fibvote") {
-      return head + "<h1>Which one is the handbook?</h1>" + buttons(st.choices, "fib");
+    if (needsWager(st) && ui.wager == null) return head + wagerHTML();
+    if (st.kind === "decoy-sponsor") {
+      var sponsored = st.youAnswered || (st.answered || []).indexOf(ui.myId) !== -1;
+      if (sponsored) return head + "<h1>" + PDG.esc(st.prompt) + '</h1><div class="locked">Decoy is in. Waiting on the flight.</div>';
+      return head + "<h1>" + PDG.esc(st.prompt) + "</h1><p>Sponsor one decoy. You cannot vote for it later.</p>" + buttons(st.choices, "sponsor");
+    }
+    if (st.kind === "decoy-vote") {
+      return head + "<h1>Which line is the handbook?</h1>" + buttons(st.choices, "decoy");
     }
     if (st.kind === "sjt") {
       return head + "<h1>" + PDG.esc(st.prompt) + "</h1><p>" + (ui.sjtMost == null ? "Tap the MOST effective action." : "Tap the LEAST effective action.") + "</p>" + (st.choices || []).map(function (c) {
@@ -95,9 +99,23 @@
     return head + "<h1>" + PDG.esc(st.prompt || "") + "</h1>" + buttons(st.choices, "choice");
   }
 
+  function needsWager(st) {
+    if (!st || st.phase !== "collect") return false;
+    if (st.mode === "boards" || st.mode === "lightning") return true;
+    if (st.mode === "decoy" && st.kind !== "decoy-vote") return true;
+    return false;
+  }
+
+  function wagerHTML() {
+    return '<h1>Lock a stripe</h1><p>0 pays the base. 1–3 multiply a hit and cost the same factor on a miss.</p><div class="row">' +
+      [0, 1, 2, 3].map(function (n) {
+        return '<button class="btn' + (n === 3 ? " amber" : "") + '" type="button" data-wager="' + n + '">' + n + "</button>";
+      }).join("") + "</div>";
+  }
+
   function buttons(list, mode) {
     return '<div class="choices">' + (list || []).map(function (c, i) {
-      var disabled = mode === "fib" && ui.ownOptionId && c.id === ui.ownOptionId;
+      var disabled = (mode === "fib" || mode === "decoy") && ui.ownOptionId && c.id === ui.ownOptionId;
       var letter = c.letter || PDG.LETTERS[i] || "";
       var shape = c.shape || PDG.SHAPES[i] || "square";
       var inner = shape === "diamond" ? "<span>" + PDG.esc(letter) + "</span>" : PDG.esc(letter);
@@ -114,18 +132,20 @@
     });
     var join = document.getElementById("join");
     if (join) join.addEventListener("click", doJoin);
-    var send = document.getElementById("sendfib");
-    if (send) send.addEventListener("click", function () {
-      var text = document.getElementById("fibtext").value;
-      link.sendAct({ type: "fibwrite", text: text });
-      ui.fibDraft = "";
+    document.querySelectorAll("[data-wager]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        ui.wager = Number(btn.getAttribute("data-wager"));
+        render();
+      });
     });
     document.querySelectorAll(".choice[data-mode]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var mode = btn.getAttribute("data-mode");
         var id = btn.getAttribute("data-id");
-        if (mode === "choice") link.sendAct({ type: "choice", choice: id });
-        else if (mode === "fib") link.sendAct({ type: "fibvote", optionId: id });
+        var wager = ui.wager || 0;
+        if (mode === "choice") link.sendAct({ type: "choice", choice: id, wager: wager });
+        else if (mode === "sponsor") link.sendAct({ type: "sponsor", optionId: id, wager: wager });
+        else if (mode === "decoy") link.sendAct({ type: "decoyvote", optionId: id, wager: wager });
         else if (mode === "lock") link.sendAct({ type: "lock", choice: id });
         else if (mode === "suggest") link.sendAct({ type: "suggest", choice: id });
         PDG.audio.play("tick");
@@ -167,7 +187,7 @@
         state: function (state) {
           var prev = ui.state && ui.state.round;
           ui.state = state;
-          if (state && state.round !== prev) ui.sjtMost = null;
+          if (state && state.round !== prev) { ui.sjtMost = null; ui.wager = null; }
           if (state && state.subphase !== "vote") ui.ownOptionId = null;
           render();
         },
@@ -196,9 +216,14 @@
 
   document.addEventListener("keydown", function (ev) {
     if (!ui.state || ui.state.phase !== "collect") return;
+    if (ev.key >= "0" && ev.key <= "3" && document.querySelector("[data-wager]")) {
+      ui.wager = Number(ev.key);
+      render();
+      return;
+    }
     var n = Number(ev.key);
     if (n >= 1 && n <= 4) {
-      var buttonsLive = document.querySelectorAll(".choice[data-mode='choice'], .choice[data-mode='lock']");
+      var buttonsLive = document.querySelectorAll(".choice[data-mode='choice'], .choice[data-mode='lock'], .choice[data-mode='sponsor'], .choice[data-mode='decoy']");
       if (buttonsLive[n - 1] && !buttonsLive[n - 1].disabled) buttonsLive[n - 1].click();
     }
   });

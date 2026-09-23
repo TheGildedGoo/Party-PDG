@@ -5,7 +5,7 @@
   var dbPromise = null;
 
   function empty() {
-    return { cards: {}, seen: {}, chapters: {}, mocks: [] };
+    return { cards: {}, seen: {}, chapters: {}, mocks: [], days: [] };
   }
 
   function loadLocal() {
@@ -17,6 +17,7 @@
       data.seen = data.seen || {};
       data.chapters = data.chapters || {};
       data.mocks = data.mocks || [];
+      data.days = data.days || [];
       return data;
     } catch (e) {
       return empty();
@@ -67,6 +68,9 @@
     if (quality >= 3) bucket.correct += 1;
     else bucket.wrong += 1;
     data.chapters[ch] = bucket;
+    data.days = data.days || [];
+    var day = new Date().toISOString().slice(0, 10);
+    if (data.days.indexOf(day) === -1) data.days.push(day);
     saveLocal(data);
     return data;
   }
@@ -92,6 +96,7 @@
       data.seen = data.seen || {};
       data.chapters = data.chapters || {};
       data.mocks = data.mocks || [];
+      data.days = data.days || [];
       saveLocal(data);
       return data;
     }
