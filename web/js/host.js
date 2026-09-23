@@ -43,6 +43,10 @@
 
   function localPlay() { return !ui.party; }
 
+  function hostedRelay() {
+    return !!(PDG.usesHostedRelay && PDG.usesHostedRelay());
+  }
+
   function wagerMode() {
     return game && (game.modeId === "boards" || game.modeId === "lightning" || game.modeId === "decoy");
   }
@@ -154,6 +158,8 @@
     } else if (joinInfo && joinInfo.join) {
       next = joinInfo.join + "?room=" + game.room;
       unreachable = joinInfo.reachable === false || joinInfo.ip === "127.0.0.1";
+    } else {
+      next = location.origin + (hostedRelay() ? "/play.html?room=" : "/play?room=") + game.room;
     }
     var changed = game.joinUrl !== next || ui.lanUnreachable !== unreachable;
     game.joinUrl = next;
@@ -185,16 +191,9 @@
       joinInfo = info;
       applyJoin();
     }).catch(function () {
-      if (!game.joinUrl) game.joinUrl = location.origin + "/play?room=" + game.room;
       var hostName = location.hostname;
-      var local = hostName === "localhost" || hostName === "127.0.0.1";
-      if (local && !ui.lanUnreachable) {
-        ui.lanUnreachable = true;
-        if (ui.screen === "lobby") {
-          lastKey = "";
-          render();
-        }
-      }
+      if ((hostName === "localhost" || hostName === "127.0.0.1") && !ui.lanUnreachable) ui.lanUnreachable = true;
+      applyJoin();
     });
   }
 
@@ -236,7 +235,9 @@
         },
         offline: function () {
           if (welcomed) return;
-          var line = "Room relay is not reachable. " + COACH;
+          var line = hostedRelay()
+            ? "Room relay is not reachable. Check the network, then try Host a party again."
+            : "Room relay is not reachable. " + COACH;
           if (ui.error === line) return;
           ui.error = line;
           render();
@@ -390,7 +391,7 @@
       return '<div class="chip"><img alt="" src="' + avatarImg(p.avatar) + '"><div><strong>' + PDG.esc(p.name) + '</strong><div class="meta">' + (p.audience ? "Audience" : "Player") + "</div></div></div>";
     }).join("") || '<p class="fine">Waiting for phones. Late join closes when round 1 starts. Cap is 8 players. Audience is uncapped.</p>';
     return '' +
-      '<p class="kicker">Party lobby</p><h2>Same Wi-Fi. Type the code.</h2>' +
+      '<p class="kicker">Party lobby</p><h2>' + (hostedRelay() ? "Any network. Type the code." : "Same Wi-Fi. Type the code.") + "</h2>" +
       '<p class="disclaimer">Unofficial study aid. Not an Air Force product, not a substitute for AFH 1. PFE content is determined solely by the Air Force.</p>' +
       '<div class="grid-2"><div>' +
       '<div class="row">' +
@@ -1046,7 +1047,9 @@
     ui.error = "";
     ui.wager = null;
     game.players = game.players.filter(function (p) { return p.id !== "host-seat"; });
-    game.hostLine = "Same Wi-Fi. Phones join with the room code.";
+    game.hostLine = hostedRelay()
+      ? "Phones join with the room code. Same Wi-Fi is not required."
+      : "Same Wi-Fi. Phones join with the room code.";
     game.toLobby();
     game.configure(settings);
     connectHost();

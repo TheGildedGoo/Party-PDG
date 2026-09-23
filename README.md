@@ -20,6 +20,12 @@ The server listens on `0.0.0.0` and prefers port 8741. If that port is busy it t
 
 No Python? Double-click `START.html`. That opens Quiet Hours in the browser for one person. It does not connect to a relay. Phones cannot join a file opened that way.
 
+## Play from anywhere
+
+https://pdg-play.com is the same host screen. **Host a party** opens a room on the Cloudflare relay (`relay/`, Worker `pdg-party-relay`) instead of the Python process. The TV shows a 4-character code and a QR for `https://pdg-play.com/play.html?room=CODE`. A phone on any network opens that link, enters a callsign, and joins. Same message shapes as the LAN server. The Python launcher is unchanged: ports 8741–8750 still use same-origin `/ws`.
+
+The static client reads `window.PDG_RELAY_URL` from `web/js/relay-config.js`. There is no build step, so a Vercel environment variable is not injected. Deploy steps for the Worker are in `relay/README.md`.
+
 ## What you can play
 
 - **Lobby.** Rank track (E-5, E-6, mixed, or every chapter), round count, Mild or Chief roast, flight count, demo seed.

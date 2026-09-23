@@ -198,7 +198,9 @@
         error: function (message) { ui.error = message || "Could not join."; ui.linked = false; render(); },
         hostgone: function () { ui.error = "Host closed the room."; ui.linked = false; ui.state = null; render(); },
         offline: function () {
-          var line = "Could not join the host. Use the same Wi-Fi, not a guest network, and allow Python through the firewall.";
+          var line = PDG.usesHostedRelay && PDG.usesHostedRelay()
+            ? "Could not reach the room. Check the code and the network."
+            : "Could not join the host. Use the same Wi-Fi, not a guest network, and allow Python through the firewall.";
           if (ui.error === line && !ui.linked) return;
           ui.linked = false;
           ui.error = line;

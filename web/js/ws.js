@@ -78,14 +78,37 @@
       };
     }
 
+    function lanServer() {
+      var port = Number(location.port || 0);
+      return port >= 8741 && port <= 8750;
+    }
+
+    function socketUrl() {
+      var base;
+      if (lanServer()) {
+        var proto = location.protocol === "https:" ? "wss://" : "ws://";
+        base = proto + location.host + "/ws";
+      } else {
+        base = String(root.PDG_RELAY_URL || "").replace(/\/$/, "");
+      }
+      if (!base || base.indexOf("SUBDOMAIN") !== -1) return "";
+      var join = base.indexOf("?") === -1 ? "?" : "&";
+      return base + join + "room=" + encodeURIComponent(room);
+    }
+
     function startWs() {
       if (closed) return;
       mode = "ws";
-      var proto = location.protocol === "https:" ? "wss://" : "ws://";
       var gen = ++generation;
+      var url = socketUrl();
+      if (!url) {
+        emit("error", "Hosted room relay is not configured.");
+        emit("offline");
+        return;
+      }
       var socket;
       try {
-        socket = new WebSocket(proto + location.host + "/ws");
+        socket = new WebSocket(url);
       } catch (e) {
         emit("offline");
         scheduleReconnect();
@@ -197,5 +220,14 @@
     };
   }
 
+  function lanPort() {
+    var port = Number(root.location && root.location.port || 0);
+    return port >= 8741 && port <= 8750;
+  }
+
   PDG.connect = connect;
+  PDG.usesHostedRelay = function () {
+    var protocol = root.location && root.location.protocol;
+    return protocol !== "file:" && !lanPort();
+  };
 })(typeof globalThis !== "undefined" ? globalThis : this);
