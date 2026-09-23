@@ -86,6 +86,14 @@ Every item is tagged with `kind` (`mcq`, `decoy`, or `sjt`), chapter, section, p
 - Illustrations are original drawings. There is no Air Force seal and no Hap Arnold trademark lockup. Rank marks in the game are tokens, not official insignia.
 - After the first visit through the launcher, the service worker can reopen the host and player pages offline. A room still needs the launcher running if phones are joining.
 
+## Accounts, trial, and billing
+
+The Vercel app (`pdg-play`, root directory `web/`) adds a marketing splash, email login, a 30-day $1/month trial, and an admin panel. The Python launcher still runs Quiet Hours and LAN rooms without that API. Setup for Neon, Resend, Stripe, and the admin bootstrap password is in `docs/SAAS.md`.
+
+```bash
+node --test tools/test_saas.mjs
+```
+
 ## Rebuild
 
 ```bash

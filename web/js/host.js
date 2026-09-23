@@ -38,6 +38,7 @@
   var lastKey = "";
   var lastPhase = "";
   var rendering = false;
+  var playGate = false;
 
   function $(id) { return document.getElementById(id); }
 
@@ -84,8 +85,15 @@
     }
   }
 
+  function touchProgress() {
+    if (PDG.onProgressSaved) {
+      try { PDG.onProgressSaved(); } catch (e) { /* ignore */ }
+    }
+  }
+
   function saveAch(data) {
     try { localStorage.setItem(ACH_KEY, JSON.stringify(data)); } catch (e) { /* ignore */ }
+    touchProgress();
   }
 
   function loadFocus() {
@@ -100,6 +108,7 @@
 
   function saveFocus(rollup) {
     try { localStorage.setItem(FOCUS_KEY, JSON.stringify(rollup || {})); } catch (e) { /* ignore */ }
+    touchProgress();
   }
 
   function choiceHTML(list, revealId) {
@@ -257,6 +266,30 @@
   function render() {
     var app = $("app");
     if (!app || !game) return;
+    if (PDG.account && PDG.account.blocksPlay && PDG.account.blocksPlay()) {
+      playGate = true;
+      var gateKey = "gate:" + PDG.account.viewKey();
+      if (lastKey === gateKey) return;
+      lastKey = gateKey;
+      rendering = true;
+      app.innerHTML = PDG.account.renderGate();
+      rendering = false;
+      PDG.account.bindGate();
+      return;
+    }
+    if (playGate) {
+      playGate = false;
+      var stayingInDemo = PDG.account && PDG.account.demoOnly && PDG.account.demoOnly();
+      if (!stayingInDemo) {
+        ui.party = false;
+        ui.screen = "attract";
+        ui.error = "";
+        ui.solo = null;
+        game.phase = "attract";
+        game.toLobby();
+        game.hostLine = "This laptop can run the whole session. Phones join when you host a room.";
+      }
+    }
     if (ui.wagerRound !== game.index) {
       ui.wagerRound = game.index;
       ui.wager = null;
@@ -264,8 +297,9 @@
     }
     captureReveal();
     if (game.phase === "results") finalizeSession();
+    var accountKey = PDG.account && PDG.account.viewKey ? PDG.account.viewKey() : "";
     var key = [
-      ui.screen, ui.party ? 1 : 0, ui.wager, ui.hostSjt, ui.notice, (ui.toasts || []).length,
+      ui.screen, ui.party ? 1 : 0, accountKey, ui.wager, ui.hostSjt, ui.notice, (ui.toasts || []).length,
       game.phase, game.index, game.subphase, game.reveal ? 1 : 0, game.steal ? 1 : 0,
       game.turnTeam, game.players.length, Object.keys(game.answers || {}).length,
       game.interstitial ? 1 : 0, ui.streak
@@ -300,6 +334,7 @@
       '<div class="brand">PDG <span>PARTY</span></div>' +
       modeSwitchHTML() +
       '<div class="top-actions">' +
+      ((PDG.account && PDG.account.chromeHTML) ? PDG.account.chromeHTML() : "") +
       '<button class="icon-btn" id="mute" type="button">' + PDG.esc(muteLabel) + "</button>" +
       '<button class="icon-btn" id="quiet" type="button">' + PDG.esc(quietLabel) + "</button>" +
       '<button class="icon-btn" id="about" type="button">About</button>' +
@@ -346,6 +381,10 @@
   }
 
   function screen() {
+    if (PDG.account && PDG.account.panelHTML) {
+      var accountPanel = PDG.account.panelHTML();
+      if (accountPanel) return accountPanel;
+    }
     if (ui.screen === "about") return aboutHTML();
     if (ui.screen === "decoy-empty") return decoyEmptyHTML();
     if (ui.screen === "rollup") return rollupHTML();
@@ -676,6 +715,7 @@
       return '<p class="kicker">Quiet Hours · solo</p><h2>Study desk</h2>' +
         '<p class="disclaimer">Unofficial study aid. Not an Air Force product, not a substitute for AFH 1, and not a source the Air Force uses to write the PFE. Promotion test content is determined solely by the Air Force.</p>' +
         "<p>No phone. No room code. Answers stay on this screen. Due now: " + dueN + ".</p>" +
+        (ui.error ? '<p class="warn">' + PDG.esc(ui.error) + "</p>" : "") +
         (s.empty ? '<p class="warn">' + PDG.esc(s.empty) + "</p>" : "") +
         '<div class="row">' + fieldRank(s.track || "E5").replace('id="rank"', 'id="solo-rank"') + chapterField() + "</div>" +
         '<div class="row">' +
@@ -1026,6 +1066,12 @@
   }
 
   function enterMultiplayer() {
+    if (PDG.account && PDG.account.demoOnly && PDG.account.demoOnly()) {
+      ui.error = "Demo Quiet Hours stays on this screen. Register to host a room.";
+      ui.screen = "solo";
+      render();
+      return;
+    }
     if (ui.party) return;
     var settings = copySettings(false);
     var rankEl = $("solo-rank");
@@ -1085,7 +1131,9 @@
     game.addPlayer({ id: "host-seat", name: "You", avatar: "open-book" });
     var track = soloTrack();
     game.configure({ rank: track, solo: true });
-    begin(mode, Object.assign({ rank: track }, opts || {}));
+    var nextOpts = Object.assign({ rank: track }, opts || {});
+    if (PDG.account && PDG.account.demoOnly && PDG.account.demoOnly()) nextOpts.demo = true;
+    begin(mode, nextOpts);
   }
 
   function emptyCopy(kind) {
@@ -1120,6 +1168,9 @@
     } else {
       pool = PDG.shuffle(pool);
     }
+    if (PDG.account && PDG.account.demoOnly && PDG.account.demoOnly()) {
+      pool = pool.filter(function (q) { return q.demo; });
+    }
     pool = pool.slice(0, 15);
     ui.solo = { track: track, chapter: chapter, deck: pool, pos: 0, current: pool[0] || null, revealed: false, empty: pool.length ? "" : emptyCopy(kind) };
     ui.screen = "solo";
@@ -1132,6 +1183,11 @@
   }
 
   function startMock() {
+    if (PDG.account && PDG.account.demoOnly && PDG.account.demoOnly()) {
+      ui.error = "The mock PFE needs a verified account on an active trial or subscription.";
+      render();
+      return;
+    }
     if (ui.session && !ui.session.closed && ui.attempts.length) finalizeSession();
     closePartyLink();
     var track = soloTrack();
@@ -1382,6 +1438,7 @@
         game.receive("host-seat", { type: "sjt", most: ui.hostSjt, least: idx });
       });
     });
+    if (PDG.account && PDG.account.bindPanel) PDG.account.bindPanel();
     var importer = $("import");
     if (importer) importer.addEventListener("change", function () {
       var file = importer.files && importer.files[0];
@@ -1448,6 +1505,20 @@
     }
   });
 
+  PDG.enterDemo = function () {
+    closePartyLink();
+    ui.party = false;
+    ui.screen = "solo";
+    ui.solo = { track: "E5" };
+    if (game) {
+      game.configure({ demo: true });
+      game.hostLine = "Demo Quiet Hours. Register to keep progress and open the full bank.";
+    }
+    lastKey = "";
+    render();
+  };
+  PDG.requestRender = function () { lastKey = ""; render(); };
+
   loadBank().then(function (loaded) {
     bank = loaded;
     bank.questions = bank.questions || [];
@@ -1455,9 +1526,24 @@
     bank.decoys = bank.decoys || [];
     bank.lines = bank.lines || { dares: [] };
     game = new PDG.Game(bank);
+    var boot = (PDG.account && PDG.account.boot) ? PDG.account.boot() : Promise.resolve();
+    return boot.then(function () {
     game.on(function () { pushState(); render(); });
     var params = new URLSearchParams(location.search);
-    if (params.get("quiet") === "1" || location.protocol === "file:") {
+    var offlineSolo = params.get("quiet") === "1" || location.protocol === "file:";
+    if (PDG.account && PDG.account.saas) {
+      if (!PDG.account.blocksPlay()) {
+        if (PDG.account.demoOnly()) {
+          ui.screen = "solo";
+          ui.solo = { track: "E5" };
+          game.configure({ demo: true });
+          game.hostLine = "Demo Quiet Hours. Register to keep progress and open the full bank.";
+        } else {
+          ui.screen = "attract";
+          game.hostLine = "This laptop can run the whole session. Phones join when you host a room.";
+        }
+      }
+    } else if (offlineSolo) {
       ui.screen = "solo";
       ui.solo = { track: "E5" };
       game.hostLine = "Quiet Hours. This screen is the whole session.";
@@ -1475,6 +1561,7 @@
         if ((Date.now() - ui.mock.started) >= ui.mock.limit) advanceMock();
       }
     }, 250);
+    });
   }).catch(function (err) {
     var app = $("app");
     if (app) app.innerHTML = '<div class="panel"><h1>PDG PARTY</h1><p class="disclaimer">Unofficial study aid. Not an Air Force product.</p><p>Question bank failed to load. Use the launcher (start.sh) so the folder is served over http, or rebuild with python3 tools/build_bank.py.</p><p class="fine">' + PDG.esc(String(err)) + "</p></div>";

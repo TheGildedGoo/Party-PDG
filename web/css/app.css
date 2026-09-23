@@ -219,7 +219,7 @@ body.host .disclaimer { font-size: 18px; }
 .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .grid-2 { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 18px; }
 label.field { display: flex; flex-direction: column; gap: 6px; font-size: 18px; min-width: 140px; }
-select, input[type="text"], textarea {
+select, input[type="text"], input[type="email"], input[type="password"], input[type="number"], input[type="datetime-local"], textarea {
   background: #07141f;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -502,3 +502,29 @@ body.host .stage { width: min(1440px, 100%); margin: 0 auto; }
   .sjt-board, .flights { grid-template-columns: 1fr; }
   .room-code { letter-spacing: 0.08em; }
 }
+
+.auth-wrap { min-height: 100vh; font-size: 18px; }
+.auth-card {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 28px 22px 48px;
+}
+.auth-card h2 { font-size: clamp(36px, 6vw, 64px); }
+.feature-list { margin: 0; padding-left: 1.2em; display: grid; gap: 8px; }
+.stack { display: flex; flex-direction: column; gap: 12px; max-width: 420px; }
+.saas-panel { font-size: 18px; gap: 12px; }
+.saas-panel h2 { font-size: clamp(32px, 4vw, 48px); }
+.saas-panel h3 { margin: 8px 0 0; font-family: var(--display); letter-spacing: 0.04em; }
+.table-wrap { overflow-x: auto; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 16px; }
+.admin-table th, .admin-table td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.code-card, .danger-box {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.danger-box { border-left: 6px solid var(--danger); }
+.top-actions { justify-content: flex-end; }
