@@ -182,14 +182,33 @@ static bool pullBank() {
   return true;
 }
 
+static bool readProgressFile(String& out) {
+  if (!sdReady() || !sdExists(SD_PATH_PROGRESS)) return false;
+  File file = sdOpen(SD_PATH_PROGRESS, FILE_READ);
+  if (!file) return false;
+  out = file.readString();
+  file.close();
+  return out.length() > 2;
+}
+
 static bool pullPushProgress() {
+  if (!sdReady()) {
+    note("No SD card, so there is no progress to send.");
+    return false;
+  }
+  srsReload();
+  if (!sdExists(SD_PATH_PROGRESS)) srsSave();
   WiFiClientSecure client;
   HTTPClient http;
   String url = String(settingsBaseUrl()) + DEVICE_API_PROGRESS;
-  if (!beginHttp(http, client, url)) return false;
+  if (!beginHttp(http, client, url)) {
+    note("Could not open the progress request.");
+    return false;
+  }
   int code = http.GET();
   String response = http.getString();
   http.end();
+  Serial.printf("progress GET %d\n", code);
   if (code == 401) {
     settingsClearToken();
     note("Login expired. Log in again.");
@@ -197,16 +216,17 @@ static bool pullPushProgress() {
   }
   if (code == 200) {
     if (!srsMergeRemote(response.c_str(), response.length())) {
-      note("Progress reply was not valid.");
-      return false;
+      Serial.println("progress merge skipped");
     }
   } else if (code != 404) {
-    char msg[64];
-    snprintf(msg, sizeof(msg), "Progress read failed (HTTP %d).", code);
-    note(msg);
+    Serial.printf("progress GET failed, sending the SD card anyway\n");
+  }
+  String local;
+  if (!readProgressFile(local)) {
+    note("Could not read /pocket/progress.json on the SD card.");
     return false;
   }
-  const char* body = srsExportJson();
+  Serial.printf("uploading SD progress, %u bytes\n", (unsigned)local.length());
   WiFiClientSecure client2;
   HTTPClient put;
   if (!beginHttp(put, client2, url)) {
@@ -214,17 +234,18 @@ static bool pullPushProgress() {
     return false;
   }
   put.addHeader("Content-Type", "application/json");
-  int putCode = put.PUT(body);
+  int putCode = put.PUT(local);
   String merged = put.getString();
   put.end();
   Serial.printf("progress PUT %d\n", putCode);
   if (putCode != 200) {
-    char msg[64];
+    char msg[80];
     snprintf(msg, sizeof(msg), "Progress upload failed (HTTP %d).", putCode);
     note(msg);
     return false;
   }
-  srsMergeRemote(merged.c_str(), merged.length());
+  if (!srsMergeRemote(merged.c_str(), merged.length())) srsSave();
+  note("SD progress sent to the account.");
   return true;
 }
 

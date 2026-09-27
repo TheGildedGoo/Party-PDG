@@ -6,6 +6,7 @@
 #include "srs_algo.h"
 
 void srsBegin();
+bool srsReload();
 void srsGrade(const Mcq& item, bool correct, int picked);
 bool srsLookup(const char* id, SrCard* out);
 int srsWrong(const char* id);

@@ -82,6 +82,7 @@ static bool loadFile() {
 }
 
 void srsBegin() { loadFile(); }
+bool srsReload() { return loadFile(); }
 
 bool srsLookup(const char* id, SrCard* out) {
   if (!id) return false;
