@@ -27,6 +27,11 @@ static int analyticsChapter = 0;
 static char statusLine[96] = "";
 static lv_obj_t* emailBox = nullptr;
 static lv_obj_t* passBox = nullptr;
+static lv_obj_t* loginKb = nullptr;
+static lv_obj_t* loginBtn = nullptr;
+static lv_obj_t* skipBtn = nullptr;
+static lv_obj_t* hideBtn = nullptr;
+static bool passVisible = false;
 
 static void showBoot();
 static void showWifi();
@@ -220,9 +225,51 @@ static void onBright(lv_event_t* e) {
   if (lv_event_get_code(e) == LV_EVENT_RELEASED) settingsSave();
 }
 
+static void showKeyboard(bool open) {
+  if (loginKb) {
+    if (open) lv_obj_clear_flag(loginKb, LV_OBJ_FLAG_HIDDEN);
+    else {
+      lv_obj_add_flag(loginKb, LV_OBJ_FLAG_HIDDEN);
+      lv_keyboard_set_textarea(loginKb, nullptr);
+    }
+  }
+  if (loginBtn) {
+    if (open) lv_obj_add_flag(loginBtn, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_clear_flag(loginBtn, LV_OBJ_FLAG_HIDDEN);
+  }
+  if (skipBtn) {
+    if (open) lv_obj_add_flag(skipBtn, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_clear_flag(skipBtn, LV_OBJ_FLAG_HIDDEN);
+  }
+  if (hideBtn) {
+    lv_obj_t* lab = lv_obj_get_child(hideBtn, 0);
+    if (lab) lv_label_set_text(lab, open ? "Hide" : "Keys");
+  }
+}
+
 static void onFocus(lv_event_t* e) {
   lv_obj_t* kb = (lv_obj_t*)lv_event_get_user_data(e);
   lv_keyboard_set_textarea(kb, lv_event_get_target(e));
+  showKeyboard(true);
+}
+
+static void onKb(lv_event_t* e) {
+  lv_event_code_t code = lv_event_get_code(e);
+  if (code == LV_EVENT_READY || code == LV_EVENT_CANCEL) showKeyboard(false);
+}
+
+static void onHideKey(lv_event_t* e) {
+  (void)e;
+  bool open = loginKb && !lv_obj_has_flag(loginKb, LV_OBJ_FLAG_HIDDEN);
+  showKeyboard(!open);
+}
+
+static void onShowPass(lv_event_t* e) {
+  if (!passBox) return;
+  passVisible = !passVisible;
+  lv_textarea_set_password_mode(passBox, passVisible ? false : true);
+  lv_obj_t* lab = lv_obj_get_child(lv_event_get_target(e), 0);
+  if (lab) lv_label_set_text(lab, passVisible ? "Hide pw" : "Show pw");
 }
 
 static void showBoot() {
@@ -255,29 +302,76 @@ static void showWifi() {
 static void showLogin() {
   page = Page::Login;
   pageAt = millis();
-  lv_obj_t* scr = fresh();
-  addLabel(scr, "Log in", &lv_font_montserrat_28);
-  if (statusLine[0]) addLabel(scr, statusLine, &lv_font_montserrat_14);
+  passVisible = false;
+  lv_obj_t* scr = lv_obj_create(nullptr);
+  lv_obj_set_size(scr, 320, 240);
+  lv_obj_set_style_bg_color(scr, lv_color_hex(0x1C1C1C), 0);
+  lv_obj_set_style_text_color(scr, lv_color_hex(0xF4F1EA), 0);
+  lv_obj_set_style_text_font(scr, &lv_font_montserrat_16, 0);
+  lv_obj_set_style_pad_all(scr, 0, 0);
+  lv_obj_clear_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
+  lv_scr_load_anim(scr, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
+
+  lv_obj_t* title = addLabel(scr, "Log in", &lv_font_montserrat_16);
+  lv_obj_set_pos(title, 8, 4);
+  if (statusLine[0]) {
+    lv_obj_t* status = addLabel(scr, statusLine, &lv_font_montserrat_14);
+    lv_obj_set_pos(status, 70, 6);
+    lv_obj_set_width(status, 160);
+  }
+
+  hideBtn = lv_btn_create(scr);
+  lv_obj_set_pos(hideBtn, 236, 2);
+  lv_obj_set_size(hideBtn, 78, 26);
+  lv_obj_set_style_bg_color(hideBtn, lv_color_hex(0x2A2A2A), 0);
+  lv_obj_add_event_cb(hideBtn, onHideKey, LV_EVENT_CLICKED, nullptr);
+  lv_obj_t* hideLab = lv_label_create(hideBtn);
+  lv_label_set_text(hideLab, "Hide");
+  lv_obj_center(hideLab);
+
   emailBox = lv_textarea_create(scr);
   lv_textarea_set_placeholder_text(emailBox, "Email");
   lv_textarea_set_one_line(emailBox, true);
   lv_textarea_set_text(emailBox, settings().email);
-  lv_obj_set_width(emailBox, lv_pct(100));
+  lv_obj_set_pos(emailBox, 6, 32);
+  lv_obj_set_size(emailBox, 308, 34);
+
   passBox = lv_textarea_create(scr);
   lv_textarea_set_placeholder_text(passBox, "Password");
   lv_textarea_set_one_line(passBox, true);
   lv_textarea_set_password_mode(passBox, true);
-  lv_obj_set_width(passBox, lv_pct(100));
-  lv_obj_t* kb = lv_keyboard_create(scr);
-  lv_obj_set_size(kb, lv_pct(100), 108);
-  lv_obj_add_flag(kb, LV_OBJ_FLAG_FLOATING);
-  lv_obj_align(kb, LV_ALIGN_BOTTOM_MID, 0, 0);
-  lv_obj_set_style_pad_bottom(scr, 112, 0);
-  lv_keyboard_set_textarea(kb, emailBox);
-  lv_obj_add_event_cb(emailBox, onFocus, LV_EVENT_FOCUSED, kb);
-  lv_obj_add_event_cb(passBox, onFocus, LV_EVENT_FOCUSED, kb);
-  addButton(scr, "Log in", 1, true);
-  if (bankCount() > 0) addButton(scr, "Skip, study offline", 2, false);
+  lv_obj_set_pos(passBox, 6, 70);
+  lv_obj_set_size(passBox, 200, 34);
+
+  lv_obj_t* show = lv_btn_create(scr);
+  lv_obj_set_pos(show, 212, 70);
+  lv_obj_set_size(show, 102, 34);
+  lv_obj_set_style_bg_color(show, lv_color_hex(0x2A2A2A), 0);
+  lv_obj_add_event_cb(show, onShowPass, LV_EVENT_CLICKED, nullptr);
+  lv_obj_t* showLab = lv_label_create(show);
+  lv_label_set_text(showLab, "Show pw");
+  lv_obj_center(showLab);
+
+  loginKb = lv_keyboard_create(scr);
+  lv_obj_set_size(loginKb, 320, 128);
+  lv_obj_set_pos(loginKb, 0, 112);
+  lv_obj_set_style_text_font(loginKb, &lv_font_montserrat_14, LV_PART_ITEMS);
+  lv_keyboard_set_textarea(loginKb, emailBox);
+  lv_obj_add_event_cb(loginKb, onKb, LV_EVENT_ALL, nullptr);
+  lv_obj_add_event_cb(emailBox, onFocus, LV_EVENT_FOCUSED, loginKb);
+  lv_obj_add_event_cb(passBox, onFocus, LV_EVENT_FOCUSED, loginKb);
+
+  loginBtn = addButton(scr, "Log in", 1, true);
+  lv_obj_set_pos(loginBtn, 6, 150);
+  lv_obj_set_size(loginBtn, 308, 36);
+  lv_obj_add_flag(loginBtn, LV_OBJ_FLAG_HIDDEN);
+  skipBtn = nullptr;
+  if (bankCount() > 0) {
+    skipBtn = addButton(scr, "Skip, study offline", 2, false);
+    lv_obj_set_pos(skipBtn, 6, 192);
+    lv_obj_set_size(skipBtn, 308, 36);
+    lv_obj_add_flag(skipBtn, LV_OBJ_FLAG_HIDDEN);
+  }
 }
 
 static void hhmm(char* dst, size_t n, int minute) {
@@ -289,6 +383,10 @@ static void showHome() {
   pageAt = millis();
   emailBox = nullptr;
   passBox = nullptr;
+  loginKb = nullptr;
+  loginBtn = nullptr;
+  skipBtn = nullptr;
+  hideBtn = nullptr;
   lv_obj_t* scr = fresh();
   addLabel(scr, "Pocket PDG", &lv_font_montserrat_20);
   int bat = powerBatteryPercent();
