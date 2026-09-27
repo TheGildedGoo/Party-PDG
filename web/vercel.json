@@ -11,12 +11,9 @@
       "maxDuration": 30,
       "includeFiles": "js/progress-merge.js"
     },
-    "api/progress.js": {
+    "api/**/*.js": {
       "maxDuration": 30,
       "includeFiles": "js/progress-merge.js"
-    },
-    "api/**/*.js": {
-      "maxDuration": 30
     }
   },
   "rewrites": [

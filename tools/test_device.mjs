@@ -122,7 +122,7 @@ test("bank function config is listed before the api glob", () => {
   assert.equal(keys[0], "api/device/bank.js");
   assert.match(vercel.functions["api/device/bank.js"].includeFiles, /bank\.mcq\.json/);
   assert.ok(keys.indexOf("api/**/*.js") > keys.indexOf("api/device/bank.js"));
-  assert.ok(keys.indexOf("api/**/*.js") > keys.indexOf("api/progress.js"));
+  assert.ok(keys.indexOf("api/**/*.js") > keys.indexOf("api/device/*.js"));
 });
 
 test("device routes stay bearer-only and progress still merges", () => {

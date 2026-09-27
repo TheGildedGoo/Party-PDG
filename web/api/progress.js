@@ -1,20 +1,31 @@
-import { fail } from "../lib/http.js";
-
-async function run(request, method) {
+export async function GET(request) {
+  const url = new URL(request.url);
+  if (url.searchParams.get("probe") === "1") {
+    return Response.json({ saas: true, probe: true });
+  }
   try {
     const actions = await import("../lib/actions/progress.js");
-    if (method === "PUT") return await actions.putProgress(request);
     return await actions.getProgress(request);
   } catch (err) {
-    console.error(err && err.status >= 500 ? err : (err && err.message));
-    return fail(err);
+    console.error(err);
+    return Response.json({
+      saas: true,
+      error: "progress-load",
+      message: String(err && (err.stack || err.message || err)).slice(0, 1500),
+    }, { status: 500 });
   }
 }
 
-export async function GET(request) {
-  return run(request, "GET");
-}
-
 export async function PUT(request) {
-  return run(request, "PUT");
+  try {
+    const actions = await import("../lib/actions/progress.js");
+    return await actions.putProgress(request);
+  } catch (err) {
+    console.error(err);
+    return Response.json({
+      saas: true,
+      error: "progress-load",
+      message: String(err && (err.stack || err.message || err)).slice(0, 1500),
+    }, { status: 500 });
+  }
 }
