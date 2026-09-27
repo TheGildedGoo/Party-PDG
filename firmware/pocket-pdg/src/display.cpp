@@ -41,7 +41,6 @@ static bool readPoint(int* x, int* y) {
     return false;
   }
   if (Wire.requestFrom((int)TP_I2C_ADDR, 5) < 5) {
-    i2cNoteFail();
     nextTry = millis() + 20;
     return false;
   }

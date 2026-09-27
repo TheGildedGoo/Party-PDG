@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
+#include <stdlib.h>
 #include <string.h>
 #include "fixture_bank.h"
 #include "sd_store.h"
@@ -113,6 +114,50 @@ int bankChapters(const ChapterInfo** out) {
   return chapterCount;
 }
 
+static bool dechunk(const char* in, size_t n, char** out, size_t* outN) {
+  uint32_t caps = psramFound() ? (MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT) : MALLOC_CAP_8BIT;
+  char* dst = (char*)heap_caps_malloc(n + 1, caps);
+  if (!dst) return false;
+  size_t i = 0;
+  size_t w = 0;
+  while (i < n) {
+    while (i < n && (in[i] == '\r' || in[i] == '\n')) i++;
+    if (i >= n) break;
+    char* end = nullptr;
+    unsigned long len = strtoul(in + i, &end, 16);
+    if (end == in + i || (end[0] != '\r' && end[0] != '\n' && end[0] != ';')) {
+      heap_caps_free(dst);
+      return false;
+    }
+    i = (size_t)(end - in);
+    if (i < n && in[i] == ';') {
+      while (i < n && in[i] != '\n') i++;
+    }
+    if (i < n && in[i] == '\r') i++;
+    if (i < n && in[i] == '\n') i++;
+    else {
+      heap_caps_free(dst);
+      return false;
+    }
+    if (len == 0) break;
+    if (i + len > n) {
+      heap_caps_free(dst);
+      return false;
+    }
+    memcpy(dst + w, in + i, len);
+    w += len;
+    i += len;
+  }
+  dst[w] = 0;
+  if (w < 20) {
+    heap_caps_free(dst);
+    return false;
+  }
+  *out = dst;
+  *outN = w;
+  return true;
+}
+
 static bool readPath(const char* path) {
   if (!sdExists(path)) return false;
   File file = sdOpen(path, FILE_READ);
@@ -122,7 +167,8 @@ static bool readPath(const char* path) {
     file.close();
     return false;
   }
-  char* buf = (char*)heap_caps_malloc(n + 1, psramFound() ? (MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT) : MALLOC_CAP_8BIT);
+  uint32_t caps = psramFound() ? (MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT) : MALLOC_CAP_8BIT;
+  char* buf = (char*)heap_caps_malloc(n + 1, caps);
   if (!buf) {
     file.close();
     return false;
@@ -130,7 +176,21 @@ static bool readPath(const char* path) {
   file.readBytes(buf, n);
   buf[n] = 0;
   file.close();
-  bool ok = bankIngest(buf, n);
+  size_t i = 0;
+  if (n >= 3 && (uint8_t)buf[0] == 0xEF && (uint8_t)buf[1] == 0xBB && (uint8_t)buf[2] == 0xBF) i = 3;
+  while (i < n && (buf[i] == ' ' || buf[i] == '\t' || buf[i] == '\r' || buf[i] == '\n')) i++;
+  bool ok = false;
+  if (i < n && (buf[i] == '{' || buf[i] == '[')) {
+    ok = bankIngest(buf + i, n - i);
+  } else {
+    char* plain = nullptr;
+    size_t plainN = 0;
+    if (dechunk(buf, n, &plain, &plainN)) {
+      Serial.printf("bank dechunked %u bytes\n", (unsigned)plainN);
+      ok = bankIngest(plain, plainN);
+      heap_caps_free(plain);
+    }
+  }
   heap_caps_free(buf);
   return ok;
 }

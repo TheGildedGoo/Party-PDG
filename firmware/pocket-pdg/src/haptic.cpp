@@ -8,27 +8,34 @@
 static bool ready = false;
 static int lastErr = 0;
 static int writeErr = 0;
+static int modeAck = -1;
 static uint8_t modeRead = 0x40;
+static uint8_t modeBack = 0x40;
+static uint8_t rtpRead = 0x00;
+static bool rtpTried = false;
 static volatile bool busBad = false;
 static volatile bool wantPulse = false;
 static uint8_t wantEffect = 1;
 
 void i2cNoteFail() { busBad = true; }
 
-static bool writeReg(uint8_t reg, uint8_t val) {
+/* Full stop between the pointer and the data. This core's repeated-start
+   path returns i2cWriteReadNonStop -1 and then ESP_ERR_INVALID_STATE. */
+static int writeReg(uint8_t reg, uint8_t val) {
   Wire.beginTransmission(HAPTIC_I2C_ADDR);
   Wire.write(reg);
   Wire.write(val);
-  writeErr = Wire.endTransmission();
+  writeErr = Wire.endTransmission(true);
   lastErr = writeErr;
-  return writeErr == 0;
+  return writeErr;
 }
 
 static uint8_t readReg(uint8_t reg) {
   Wire.beginTransmission(HAPTIC_I2C_ADDR);
   Wire.write(reg);
-  if (Wire.endTransmission(false) != 0) {
-    lastErr = -1;
+  int err = Wire.endTransmission(true);
+  if (err != 0) {
+    lastErr = err;
     return 0xFF;
   }
   if (Wire.requestFrom((int)HAPTIC_I2C_ADDR, 1) != 1) {
@@ -36,38 +43,49 @@ static uint8_t readReg(uint8_t reg) {
     return 0xFF;
   }
   lastErr = 0;
-  return Wire.read();
+  return (uint8_t)Wire.read();
 }
 
+/* While STANDBY is 1 the chip accepts a MODE write and nothing else.
+   Do not set DEV_RESET. That bit restores standby when it finishes. */
 static bool wake() {
   if (!ready) return false;
-  writeReg(0x01, 0x80);
-  delay(2);
+  rtpTried = false;
   writeReg(0x01, 0x00);
   delay(2);
-  modeRead = readReg(0x01);
-  if (modeRead & 0x40) {
+  modeAck = writeErr;
+  modeBack = readReg(0x01);
+  modeRead = modeBack;
+  Serial.printf("MODE write 00 ack %d readback %02X\n", modeAck, modeBack);
+  if (modeBack & 0x40) {
+    delay(8);
     writeReg(0x01, 0x00);
     delay(2);
-    modeRead = readReg(0x01);
+    modeAck = writeErr;
+    modeBack = readReg(0x01);
+    modeRead = modeBack;
+    Serial.printf("MODE retry ack %d readback %02X\n", modeAck, modeBack);
+  }
+  if (modeBack & 0x40) {
+    writeReg(0x02, 0xA5);
+    rtpRead = readReg(0x02);
+    rtpTried = true;
+    Serial.printf("RTP canary ack %d read %02X\n", writeErr, rtpRead);
+    return false;
   }
   return true;
 }
 
 static void drive(uint8_t effect) {
-  wake();
-  writeReg(0x1A, 0x36);
-  writeReg(0x1D, 0x20);
+  if (!wake()) return;
+  uint8_t fb = readReg(0x1A);
+  if (fb != 0xFF) writeReg(0x1A, (uint8_t)(fb & 0x7F));
   writeReg(0x03, 0x01);
   writeReg(0x04, effect);
   writeReg(0x05, 0x00);
   writeReg(0x0C, 0x01);
-  writeReg(0x01, 0x05);
-  writeReg(0x02, 0x7F);
-  delay(30);
-  writeReg(0x02, 0x00);
-  writeReg(0x01, 0x00);
   modeRead = readReg(0x01);
+  Serial.printf("effect %u GO mode %02X\n", effect, modeRead);
 }
 
 void i2cBegin() {
@@ -95,7 +113,7 @@ void i2cScan(bool* touch, bool* haptic, bool* codec) {
   if (codec) *codec = probe(CODEC_I2C_ADDR);
 }
 
-static void play(uint8_t effect) {
+static void queue(uint8_t effect) {
   if (!ready || !settings().hapticOn) return;
   wantEffect = effect;
   wantPulse = true;
@@ -121,37 +139,35 @@ void hapticBegin() {
     Serial.println("DRV2605L not found at 0x5A");
     return;
   }
-  settings().hapticOn = 1;
-  drive(1);
-  Serial.printf("DRV write %d mode 0x%02X\n", writeErr, modeRead);
+  if (settings().hapticOn) drive(1);
+  else wake();
 }
 
 bool hapticReady() { return ready; }
-void hapticTick() { play(4); }
-void hapticClick() { play(1); }
-void hapticWrong() { play(47); }
+void hapticTick() { queue(4); }
+void hapticClick() { queue(1); }
+void hapticWrong() { queue(47); }
 
 void hapticAlarm() {
   if (!ready || !settings().hapticOn) return;
-  play(14);
+  drive(14);
   delay(160);
-  play(1);
+  drive(1);
+}
+
+void hapticProbe() {
+  if (!ready) return;
+  wake();
+}
+
+void hapticTest(uint8_t effect) {
+  if (!ready) return;
+  drive(effect);
 }
 
 void hapticBuzz(uint16_t ms) {
-  if (!ready) return;
-  if (ms < 80) ms = 80;
-  if (ms > 400) ms = 400;
-  wake();
-  writeReg(0x1D, 0x20);
-  writeReg(0x1A, 0x36);
-  writeReg(0x01, 0x05);
-  delay(2);
-  writeReg(0x02, 0x7F);
-  delay(ms);
-  modeRead = readReg(0x01);
-  writeReg(0x02, 0x00);
-  writeReg(0x01, 0x00);
+  (void)ms;
+  hapticTest(14);
 }
 
 void hapticDebug(char* dst, size_t n) {
@@ -169,10 +185,18 @@ void hapticDebug(char* dst, size_t n) {
   else if (status & 0x02) fault = "over temp";
   else if (status & 0x01) fault = "diagnostic failed";
   const char* gate = (mode & 0x40) ? "STANDBY" : "awake";
-  snprintf(dst, n, "Motor found\nStatus %02X  %s\nMode %02X  %s\nWrite %d  Read %d", status, fault, mode, gate, writeErr, lastErr);
+  if (rtpTried && rtpRead != 0xA5) {
+    snprintf(dst, n, "Motor found\nStatus %02X  %s\nMode %02X  %s\nAck %d readback %02X\nRTP %02X writes ignored\nTie motor EN to 3V3",
+             status, fault, mode, gate, modeAck, modeBack, rtpRead);
+  } else {
+    snprintf(dst, n, "Motor found\nStatus %02X  %s\nMode %02X  %s\nAck %d readback %02X",
+             status, fault, mode, gate, modeAck, modeBack);
+  }
 }
 
 void hapticStandby() {
   if (!ready) return;
   writeReg(0x01, 0x40);
+  modeBack = 0x40;
+  modeRead = 0x40;
 }

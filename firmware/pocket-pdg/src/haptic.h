@@ -13,6 +13,8 @@ void hapticWrong();
 void hapticAlarm();
 void hapticStandby();
 void hapticBuzz(uint16_t ms);
+void hapticProbe();
+void hapticTest(uint8_t effect);
 void hapticDebug(char* dst, size_t n);
 void hapticService();
 void i2cNoteFail();

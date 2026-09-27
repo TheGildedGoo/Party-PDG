@@ -336,20 +336,22 @@ static void onTap(lv_event_t* e) {
   if (act == 14) { showSettings(); return; }
   if (act == 250) { showResetConfirm(); return; }
   if (act == 263) {
-    hapticStandby();
-    delay(10);
-    hapticClick();
+    hapticProbe();
     showDebug();
     return;
   }
-  if (act == 260) { showDebug(); return; }
+  if (act == 260) {
+    hapticProbe();
+    showDebug();
+    return;
+  }
   if (act == 261) {
-    hapticClick();
+    hapticTest(1);
     showDebug();
     return;
   }
   if (act == 262) {
-    hapticBuzz(180);
+    hapticTest(14);
     showDebug();
     return;
   }
@@ -1115,7 +1117,7 @@ static void showDebug() {
   pageAt = millis();
   lv_obj_t* scr = fresh();
   addLabel(scr, "Debug", &lv_font_montserrat_20);
-  char motor[140];
+  char motor[220];
   hapticDebug(motor, sizeof(motor));
   addLabel(scr, motor, &lv_font_montserrat_14);
   char mem[80];

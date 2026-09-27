@@ -14,7 +14,10 @@ One 1S LiPo on the board JST 1.25. The DRV2605L and the FT6336 share the board I
 | GND | GND |
 | SCL | GPIO15 |
 | SDA | GPIO16 |
+| EN | 3V3 |
 | IN | not used |
+
+EN has an internal pulldown. Left open, the chip still ACKs on 0x5A and still reads back as mode 0x40, and the motor never moves. Tie EN to 3V3 on the module. Do not leave it floating.
 
 | ERM | DRV2605L |
 | --- | --- |
