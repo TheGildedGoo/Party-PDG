@@ -353,8 +353,8 @@ static void showLogin() {
   lv_obj_center(showLab);
 
   loginKb = lv_keyboard_create(scr);
-  lv_obj_set_size(loginKb, 320, 128);
-  lv_obj_set_pos(loginKb, 0, 112);
+  lv_obj_set_size(loginKb, 320, 124);
+  lv_obj_align(loginKb, LV_ALIGN_BOTTOM_MID, 0, 0);
   lv_obj_set_style_text_font(loginKb, &lv_font_montserrat_14, LV_PART_ITEMS);
   lv_keyboard_set_textarea(loginKb, emailBox);
   lv_obj_add_event_cb(loginKb, onKb, LV_EVENT_ALL, nullptr);
