@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include "../include/schedule.h"
-#include "../include/srs_algo.h"
+#include "../src/schedule.h"
+#include "../src/srs_algo.h"
 
 static void testSm2() {
   SrCard card = {};

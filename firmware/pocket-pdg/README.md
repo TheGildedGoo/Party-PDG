@@ -34,7 +34,7 @@ Library 1, ERM mode. Not LRA. A boot scan should see touch `0x38` and the motor 
 
 The microSD slot is the onboard 4-bit SDIO socket. Do not wire it to the LCD SPI pins.
 
-LCDWiki lists I2S data out on GPIO8. If the speaker stays silent, swap DOUT and DIN in `include/board_pins.h` only.
+LCDWiki lists I2S data out on GPIO8. If the speaker stays silent, swap DOUT and DIN in `src/board_pins.h` only.
 
 ## Flash
 
@@ -46,6 +46,34 @@ pio run -t upload
 Flash writes the program into the ESP32-S3's own flash chip. The ROM inside the chip can only start code from that flash. It cannot boot the app from the microSD card. You flash once over USB. After that, the card holds the study data.
 
 `platformio.ini` targets an 8MB flash so a smaller module still boots. For a 16MB N16R8 module, set `board_build.flash_size` and `board_upload.flash_size` to `16MB`. PSRAM mode is `qio_opi`. If the board boot-loops before the logo, try `qio_qspi`.
+
+## Arduino IDE
+
+Hosyond, LCDWiki, and ES3C28P are not board names in Arduino IDE or PlatformIO. Do not search for those. In PlatformIO, skip Create New Project and use File, Open Folder on this directory. The board is already `esp32-s3-devkitc-1` in `platformio.ini`.
+
+In Arduino IDE:
+
+1. Boards Manager: install `esp32` by Espressif Systems, version 2.0.17. Do not use 3.x. The audio code uses the 2.x I2S driver.
+2. Library Manager, exact versions: `lvgl` 8.3.11, `TFT_eSPI` 2.5.43, `ArduinoJson` 7.2.1 or any 7.x, `Adafruit DRV2605`, `Adafruit BusIO`.
+3. File, Open `pocket-pdg.ino`.
+4. Tools menu:
+
+| Menu | Value |
+| --- | --- |
+| Board | ESP32S3 Dev Module |
+| USB CDC On Boot | Enabled |
+| CPU Frequency | 240MHz (WiFi) |
+| Flash Mode | QIO 80MHz |
+| Flash Size | 16MB (32Mb) |
+| Partition Scheme | Custom |
+| PSRAM | OPI PSRAM |
+| USB Mode | Hardware CDC and JTAG |
+| Upload Speed | 921600 |
+| Port | the COM port that appears |
+
+5. Click Upload. If the port never shows, hold BOOT, tap RESET, release BOOT, and click Upload again.
+
+If the metal can says N8R8 instead of N16R8, set Flash Size to 8MB. If the screen stays black after a good upload, change PSRAM from OPI PSRAM to QSPI PSRAM and upload again.
 
 ## SD card
 
@@ -75,7 +103,7 @@ The default base URL is `https://pdg-play.com`. A saved URL in settings wins. To
 pio run -e esp32-s3 --build-flags "-DPOCKET_BASE_URL=\\\"https://your-preview.vercel.app\\\""
 ```
 
-Or change the default in `include/device_api.h`.
+Or change the default in `src/device_api.h`.
 
 ## Bank cache
 

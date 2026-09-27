@@ -1,6 +1,8 @@
 #include "display.h"
 
 #include <Arduino.h>
+#define USER_SETUP_LOADED 1
+#include "tft_setup.h"
 #include <TFT_eSPI.h>
 #include <Wire.h>
 #include "board_pins.h"
