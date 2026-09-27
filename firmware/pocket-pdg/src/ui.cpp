@@ -1345,6 +1345,7 @@ void uiBegin() {
 }
 
 void uiLoop() {
+  hapticService();
   wifiHandle();
   displayLoop();
   refreshBar();

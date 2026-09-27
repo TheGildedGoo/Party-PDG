@@ -92,41 +92,16 @@ static void noteHttp(const char* what, int code, const String& body) {
 }
 
 static bool streamBody(HTTPClient& http, const char* path) {
-  WiFiClient* stream = http.getStreamPtr();
-  if (!stream || !sdReady()) return false;
+  if (!sdReady()) return false;
   char tmp[96];
   snprintf(tmp, sizeof(tmp), "%s.tmp", path);
   if (SD_MMC.exists(tmp)) SD_MMC.remove(tmp);
   File out = sdOpen(tmp, FILE_WRITE);
   if (!out) return false;
-  int total = http.getSize();
-  int got = 0;
-  uint8_t buf[2048];
-  uint32_t idle = millis();
-  while (http.connected() || stream->available()) {
-    int avail = stream->available();
-    if (avail > 0) {
-      int n = stream->readBytes(buf, avail > (int)sizeof(buf) ? sizeof(buf) : avail);
-      if (n <= 0) break;
-      if (out.write(buf, n) != (size_t)n) {
-        out.close();
-        return false;
-      }
-      got += n;
-      idle = millis();
-      if (total > 0 && got >= total) break;
-    } else if (total >= 0 && got >= total) {
-      break;
-    } else if (millis() - idle > 12000) {
-      break;
-    } else {
-      delay(2);
-    }
-  }
+  int got = http.writeToStream(&out);
   out.close();
-  Serial.printf("saved %d of %d bytes\n", got, total);
+  Serial.printf("saved %d bank bytes\n", got);
   if (got < 20) return false;
-  if (total > 0 && got < total) return false;
   if (SD_MMC.exists(path)) SD_MMC.remove(path);
   return SD_MMC.rename(tmp, path);
 }

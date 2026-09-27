@@ -146,7 +146,11 @@ bool bankLoadFile() {
 bool bankIngest(const char* json, size_t length) {
   PsramAlloc alloc;
   JsonDocument doc(&alloc);
-  if (deserializeJson(doc, json, length)) return false;
+  DeserializationError err = deserializeJson(doc, json, length);
+  if (err) {
+    Serial.printf("bank json %s, %u bytes\n", err.c_str(), (unsigned)length);
+    return false;
+  }
   JsonArray rawItems = doc["items"].is<JsonArray>() ? doc["items"].as<JsonArray>() : doc.as<JsonArray>();
   if (rawItems.isNull()) return false;
   int n = rawItems.size();
