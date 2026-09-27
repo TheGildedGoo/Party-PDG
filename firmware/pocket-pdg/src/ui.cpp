@@ -39,6 +39,7 @@ static int returnScroll = 0;
 static Page returnPage = Page::Boot;
 static int pickWhich = 0;
 static lv_obj_t* colorWheel = nullptr;
+static bool passVisible = false;
 
 static void showBoot();
 static void showWifi();
