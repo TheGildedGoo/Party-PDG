@@ -5,7 +5,15 @@
   "functions": {
     "api/device/bank.js": {
       "maxDuration": 30,
-      "includeFiles": "data/bank.mcq.json"
+      "includeFiles": "{data/bank.mcq.json,js/progress-merge.js}"
+    },
+    "api/device/*.js": {
+      "maxDuration": 30,
+      "includeFiles": "js/progress-merge.js"
+    },
+    "api/progress.js": {
+      "maxDuration": 30,
+      "includeFiles": "js/progress-merge.js"
     },
     "api/**/*.js": {
       "maxDuration": 30

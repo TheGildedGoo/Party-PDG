@@ -120,8 +120,9 @@ test("bank function config is listed before the api glob", () => {
   const vercel = JSON.parse(readFileSync(new URL("../web/vercel.json", import.meta.url), "utf8"));
   const keys = Object.keys(vercel.functions);
   assert.equal(keys[0], "api/device/bank.js");
-  assert.equal(vercel.functions["api/device/bank.js"].includeFiles, "data/bank.mcq.json");
-  assert.ok(keys.indexOf("api/**/*.js") > 0);
+  assert.match(vercel.functions["api/device/bank.js"].includeFiles, /bank\.mcq\.json/);
+  assert.ok(keys.indexOf("api/**/*.js") > keys.indexOf("api/device/bank.js"));
+  assert.ok(keys.indexOf("api/**/*.js") > keys.indexOf("api/progress.js"));
 });
 
 test("device routes stay bearer-only and progress still merges", () => {
@@ -129,6 +130,7 @@ test("device routes stay bearer-only and progress still merges", () => {
   const progress = readFileSync(new URL("../web/api/lib/actions/progress.js", import.meta.url), "utf8");
   assert.doesNotMatch(action, /assertSameOrigin/);
   assert.match(action, /saveMergedProgress/);
-  assert.match(progress, /mergeSnapshots/);
+  assert.match(progress, /loadMergeSnapshots/);
+  assert.doesNotMatch(progress, /createRequire/);
   assert.match(progress, /assertSameOrigin/);
 });

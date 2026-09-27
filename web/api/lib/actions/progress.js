@@ -1,10 +1,38 @@
-import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { runInNewContext } from "node:vm";
 import { getSql, ready } from "../db.js";
 import { json, readJson, httpError, assertSameOrigin } from "../http.js";
 import { requireUser } from "../session.js";
 
-const require = createRequire(import.meta.url);
-const { mergeSnapshots } = require("../../../js/progress-merge.js");
+let mergeSnapshotsFn = null;
+
+function loadMergeSnapshots() {
+  if (mergeSnapshotsFn) return mergeSnapshotsFn;
+  const candidates = [
+    fileURLToPath(new URL("../../../js/progress-merge.js", import.meta.url)),
+    join(process.cwd(), "js", "progress-merge.js"),
+    join("/var/task", "js", "progress-merge.js"),
+  ];
+  let source = "";
+  for (const path of candidates) {
+    try {
+      source = readFileSync(path, "utf8");
+      if (source) break;
+    } catch {
+      source = "";
+    }
+  }
+  if (!source) throw new Error("Progress merge file is missing.");
+  const sandbox = {};
+  runInNewContext(source, sandbox, { filename: "progress-merge.js" });
+  if (!sandbox.PDG || typeof sandbox.PDG.mergeSnapshots !== "function") {
+    throw new Error("Progress merge did not load.");
+  }
+  mergeSnapshotsFn = sandbox.PDG.mergeSnapshots;
+  return mergeSnapshotsFn;
+}
 
 function asObj(value, fallback) {
   if (value == null) return fallback;
@@ -46,7 +74,7 @@ export async function saveMergedProgress(userId, body) {
   const sql = getSql();
   await ready();
   const rows = await sql`SELECT * FROM progress WHERE user_id = ${userId} LIMIT 1`;
-  const merged = mergeSnapshots(snapshotFromRow(rows[0]), {
+  const merged = loadMergeSnapshots()(snapshotFromRow(rows[0]), {
     sr: body.sr || {},
     achievements: body.achievements || {},
     focus: body.focus || {},
