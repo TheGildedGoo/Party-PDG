@@ -11,81 +11,138 @@ static int writeErr = 0;
 static int modeAck = -1;
 static uint8_t modeRead = 0x40;
 static uint8_t modeBack = 0x40;
-static uint8_t rtpRead = 0x00;
-static bool rtpTried = false;
 static volatile bool busBad = false;
 static volatile bool wantPulse = false;
 static uint8_t wantEffect = 1;
+static bool recovering = false;
 
 void i2cNoteFail() { busBad = true; }
 
-/* Full stop between the pointer and the data. This core's repeated-start
-   path returns i2cWriteReadNonStop -1 and then ESP_ERR_INVALID_STATE. */
-static int writeReg(uint8_t reg, uint8_t val) {
+static void busRecover() {
+  if (recovering) return;
+  recovering = true;
+  Wire.end();
+  pinMode(PIN_I2C_SDA, INPUT_PULLUP);
+  pinMode(PIN_I2C_SCL, OUTPUT_OPEN_DRAIN);
+  digitalWrite(PIN_I2C_SCL, HIGH);
+  delayMicroseconds(8);
+  for (int i = 0; i < 9; i++) {
+    digitalWrite(PIN_I2C_SCL, LOW);
+    delayMicroseconds(5);
+    digitalWrite(PIN_I2C_SCL, HIGH);
+    delayMicroseconds(5);
+  }
+  pinMode(PIN_I2C_SDA, OUTPUT_OPEN_DRAIN);
+  digitalWrite(PIN_I2C_SDA, LOW);
+  delayMicroseconds(5);
+  digitalWrite(PIN_I2C_SCL, HIGH);
+  delayMicroseconds(5);
+  digitalWrite(PIN_I2C_SDA, HIGH);
+  delayMicroseconds(5);
+  Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
+  Wire.setClock(100000);
+  Wire.setTimeOut(100);
+  recovering = false;
+}
+
+static int writeBurst(const uint8_t* buf, size_t n) {
   Wire.beginTransmission(HAPTIC_I2C_ADDR);
-  Wire.write(reg);
-  Wire.write(val);
+  Wire.write(buf, n);
   writeErr = Wire.endTransmission(true);
+  if (writeErr != 0) {
+    busRecover();
+    Wire.beginTransmission(HAPTIC_I2C_ADDR);
+    Wire.write(buf, n);
+    writeErr = Wire.endTransmission(true);
+  }
   lastErr = writeErr;
   return writeErr;
 }
 
-static uint8_t readReg(uint8_t reg) {
-  Wire.beginTransmission(HAPTIC_I2C_ADDR);
-  Wire.write(reg);
-  int err = Wire.endTransmission(true);
-  if (err != 0) {
-    lastErr = err;
-    return 0xFF;
-  }
-  if (Wire.requestFrom((int)HAPTIC_I2C_ADDR, 1) != 1) {
-    lastErr = -2;
-    return 0xFF;
-  }
-  lastErr = 0;
-  return (uint8_t)Wire.read();
+static int writeReg(uint8_t reg, uint8_t val) {
+  uint8_t buf[2] = {reg, val};
+  return writeBurst(buf, 2);
 }
 
-/* While STANDBY is 1 the chip accepts a MODE write and nothing else.
-   Do not set DEV_RESET. That bit restores standby when it finishes. */
+static uint8_t readReg(uint8_t reg) {
+  for (int attempt = 0; attempt < 2; attempt++) {
+    Wire.beginTransmission(HAPTIC_I2C_ADDR);
+    Wire.write(reg);
+    int err = Wire.endTransmission(true);
+    if (err != 0) {
+      lastErr = err;
+      busRecover();
+      continue;
+    }
+    if (Wire.requestFrom((int)HAPTIC_I2C_ADDR, 1) == 1) {
+      lastErr = 0;
+      return (uint8_t)Wire.read();
+    }
+    lastErr = -2;
+    busRecover();
+  }
+  return 0xFF;
+}
+
+/* One write clears standby. No software reset. A read of 0xFF is a timeout, not standby. */
 static bool wake() {
   if (!ready) return false;
-  rtpTried = false;
   writeReg(0x01, 0x00);
   delay(2);
   modeAck = writeErr;
   modeBack = readReg(0x01);
   modeRead = modeBack;
   Serial.printf("MODE write 00 ack %d readback %02X\n", modeAck, modeBack);
-  if (modeBack & 0x40) {
-    delay(8);
-    writeReg(0x01, 0x00);
-    delay(2);
-    modeAck = writeErr;
-    modeBack = readReg(0x01);
-    modeRead = modeBack;
-    Serial.printf("MODE retry ack %d readback %02X\n", modeAck, modeBack);
-  }
-  if (modeBack & 0x40) {
-    writeReg(0x02, 0xA5);
-    rtpRead = readReg(0x02);
-    rtpTried = true;
-    Serial.printf("RTP canary ack %d read %02X\n", writeErr, rtpRead);
-    return false;
-  }
-  return true;
+  return modeBack != 0xFF && (modeBack & 0x40) == 0;
+}
+
+/* ERM open-loop defaults from the DRV2605 datasheet. Library effects need these. */
+static void configEr() {
+  uint8_t fb[2] = {0x1A, 0x36};
+  uint8_t ctl[2] = {0x1D, 0xA0};
+  writeBurst(fb, 2);
+  writeBurst(ctl, 2);
+}
+
+/* Mode, library, waveform, and GO in one burst. No read before it.
+   A read leaves the pointer mid-register, and the next write was landing in MODE
+   (serial showed mode 03, which is the library address byte). */
+static void playLib(uint8_t effect) {
+  if (!ready) return;
+  configEr();
+  uint8_t seq[13] = {
+      0x01, 0x00, 0x00, 0x01, effect, 0x00,
+      0, 0, 0, 0, 0, 0, 0x01};
+  int ack = writeBurst(seq, sizeof(seq));
+  modeAck = ack;
+  Serial.printf("lib %u burst ack %d\n", effect, ack);
+  delay(40);
+  modeBack = readReg(0x01);
+  modeRead = modeBack;
+  Serial.printf("after lib mode %02X\n", modeBack);
+}
+
+/* Direct drive in one burst: MODE 0x05 and amplitude together. No I2C while it spins. */
+static void playRtp(uint16_t ms) {
+  if (!ready) return;
+  if (ms < 40) ms = 40;
+  if (ms > 250) ms = 250;
+  configEr();
+  uint8_t on[3] = {0x01, 0x05, 0x7F};
+  int ack = writeBurst(on, sizeof(on));
+  modeAck = ack;
+  Serial.printf("RTP on ack %d %u ms\n", ack, ms);
+  delay(ms);
+  uint8_t off[3] = {0x01, 0x00, 0x00};
+  writeBurst(off, sizeof(off));
+  modeBack = readReg(0x01);
+  modeRead = modeBack;
+  Serial.printf("after RTP mode %02X\n", modeBack);
 }
 
 static void drive(uint8_t effect) {
-  if (!wake()) return;
-  uint8_t fb = readReg(0x1A);
-  if (fb != 0xFF) writeReg(0x1A, (uint8_t)(fb & 0x7F));
-  writeReg(0x03, 0x01);
-  writeReg(0x04, effect);
-  writeReg(0x05, 0x00);
-  writeReg(0x0C, 0x01);
-  modeRead = readReg(0x01);
-  Serial.printf("effect %u GO mode %02X\n", effect, modeRead);
+  if (effect == 14) playRtp(160);
+  else playLib(effect);
 }
 
 void i2cBegin() {
@@ -93,6 +150,7 @@ void i2cBegin() {
   if (started) return;
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
   Wire.setClock(100000);
+  Wire.setTimeOut(100);
   pinMode(PIN_TP_RST, OUTPUT);
   digitalWrite(PIN_TP_RST, LOW);
   delay(8);
@@ -122,10 +180,7 @@ static void queue(uint8_t effect) {
 void hapticService() {
   if (busBad) {
     busBad = false;
-    Wire.end();
-    delay(2);
-    Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
-    Wire.setClock(100000);
+    busRecover();
   }
   if (!wantPulse) return;
   wantPulse = false;
@@ -139,8 +194,7 @@ void hapticBegin() {
     Serial.println("DRV2605L not found at 0x5A");
     return;
   }
-  if (settings().hapticOn) drive(1);
-  else wake();
+  wake();
 }
 
 bool hapticReady() { return ready; }
@@ -150,9 +204,9 @@ void hapticWrong() { queue(47); }
 
 void hapticAlarm() {
   if (!ready || !settings().hapticOn) return;
-  drive(14);
-  delay(160);
-  drive(1);
+  playRtp(80);
+  delay(40);
+  playRtp(80);
 }
 
 void hapticProbe() {
@@ -165,9 +219,17 @@ void hapticTest(uint8_t effect) {
   drive(effect);
 }
 
-void hapticBuzz(uint16_t ms) {
-  (void)ms;
-  hapticTest(14);
+void hapticBuzz(uint16_t ms) { playRtp(ms); }
+
+static const char* modeName(uint8_t mode) {
+  if (mode == 0xFF) return "no reply";
+  if (mode & 0x40) return "STANDBY";
+  switch (mode & 0x07) {
+    case 0: return "awake";
+    case 3: return "PWM";
+    case 5: return "RTP";
+    default: return "other";
+  }
 }
 
 void hapticDebug(char* dst, size_t n) {
@@ -181,17 +243,11 @@ void hapticDebug(char* dst, size_t n) {
   modeRead = mode;
   const char* fault = "no fault";
   if (status == 0xFF) fault = "no reply";
-  else if (status & 0x04) fault = "overcurrent, output off";
+  else if (status & 0x01) fault = "overcurrent, output off";
   else if (status & 0x02) fault = "over temp";
-  else if (status & 0x01) fault = "diagnostic failed";
-  const char* gate = (mode & 0x40) ? "STANDBY" : "awake";
-  if (rtpTried && rtpRead != 0xA5) {
-    snprintf(dst, n, "Motor found\nStatus %02X  %s\nMode %02X  %s\nAck %d readback %02X\nRTP %02X writes ignored\nTie motor EN to 3V3",
-             status, fault, mode, gate, modeAck, modeBack, rtpRead);
-  } else {
-    snprintf(dst, n, "Motor found\nStatus %02X  %s\nMode %02X  %s\nAck %d readback %02X",
-             status, fault, mode, gate, modeAck, modeBack);
-  }
+  else if (status & 0x08) fault = "diagnostic failed";
+  snprintf(dst, n, "Motor found\nStatus %02X  %s\nMode %02X  %s\nAck %d readback %02X",
+           status, fault, mode, modeName(mode), modeAck, modeBack);
 }
 
 void hapticStandby() {
