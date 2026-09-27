@@ -13,7 +13,9 @@ function loadMergeSnapshots() {
   const candidates = [
     fileURLToPath(new URL("../../../js/progress-merge.js", import.meta.url)),
     join(process.cwd(), "js", "progress-merge.js"),
+    join(process.cwd(), "web", "js", "progress-merge.js"),
     join("/var/task", "js", "progress-merge.js"),
+    join("/var/task", "web", "js", "progress-merge.js"),
   ];
   let source = "";
   for (const path of candidates) {

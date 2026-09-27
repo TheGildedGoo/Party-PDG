@@ -16,7 +16,9 @@ export function bankPaths() {
     traced,
     join(root, "bank.mcq.json"),
     join(process.cwd(), "data", "bank.mcq.json"),
+    join(process.cwd(), "web", "data", "bank.mcq.json"),
     join("/var/task", "data", "bank.mcq.json"),
+    join("/var/task", "web", "data", "bank.mcq.json"),
   ];
 }
 

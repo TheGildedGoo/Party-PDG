@@ -133,4 +133,7 @@ test("device routes stay bearer-only and progress still merges", () => {
   assert.match(progress, /loadMergeSnapshots/);
   assert.doesNotMatch(progress, /createRequire/);
   assert.match(progress, /assertSameOrigin/);
+  const route = readFileSync(new URL("../web/api/progress.js", import.meta.url), "utf8");
+  assert.match(route, /from "\.\/lib\/actions\/progress\.js"/);
+  assert.doesNotMatch(route, /from "\.\.\/lib\//);
 });
