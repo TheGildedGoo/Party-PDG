@@ -11,10 +11,10 @@ async function run(request, method) {
   }
 }
 
-export function GET(request) {
+export async function GET(request) {
   return run(request, "GET");
 }
 
-export function PUT(request) {
+export async function PUT(request) {
   return run(request, "PUT");
 }
