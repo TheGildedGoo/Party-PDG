@@ -11,7 +11,18 @@
 #include "sd_store.h"
 #include "settings.h"
 #include "srs.h"
+#include <SD_MMC.h>
 #include "wifi_link.h"
+
+static char lastError[140] = "";
+
+const char* syncLastError() { return lastError; }
+
+static void note(const char* msg) {
+  strncpy(lastError, msg, sizeof(lastError) - 1);
+  lastError[sizeof(lastError) - 1] = 0;
+  Serial.println(lastError);
+}
 
 static void stamp(bool failed) {
   time_t now = time(nullptr);
@@ -68,42 +79,106 @@ bool syncLogin(const char* email, const char* password) {
   return true;
 }
 
+static bool streamBody(HTTPClient& http, const char* path) {
+  WiFiClient* stream = http.getStreamPtr();
+  if (!stream || !sdReady()) return false;
+  char tmp[96];
+  snprintf(tmp, sizeof(tmp), "%s.tmp", path);
+  if (SD_MMC.exists(tmp)) SD_MMC.remove(tmp);
+  File out = sdOpen(tmp, FILE_WRITE);
+  if (!out) return false;
+  int total = http.getSize();
+  int got = 0;
+  uint8_t buf[2048];
+  uint32_t idle = millis();
+  while (http.connected() || stream->available()) {
+    int avail = stream->available();
+    if (avail > 0) {
+      int n = stream->readBytes(buf, avail > (int)sizeof(buf) ? sizeof(buf) : avail);
+      if (n <= 0) break;
+      if (out.write(buf, n) != (size_t)n) {
+        out.close();
+        return false;
+      }
+      got += n;
+      idle = millis();
+      if (total > 0 && got >= total) break;
+    } else if (total >= 0 && got >= total) {
+      break;
+    } else if (millis() - idle > 12000) {
+      break;
+    } else {
+      delay(2);
+    }
+  }
+  out.close();
+  Serial.printf("saved %d of %d bytes\n", got, total);
+  if (got < 20) return false;
+  if (total > 0 && got < total) return false;
+  if (SD_MMC.exists(path)) SD_MMC.remove(path);
+  return SD_MMC.rename(tmp, path);
+}
+
 static bool pullBank() {
-  char query[160];
+  char query[180];
   snprintf(query, sizeof(query), "%s%s?rank=E%d&updated_since=%ld",
            settingsBaseUrl(), DEVICE_API_BANK, settings().rank == 6 ? 6 : 5, (long)settings().bankGeneratedAt);
   WiFiClientSecure client;
   HTTPClient http;
-  if (!beginHttp(http, client, query)) return false;
+  if (!beginHttp(http, client, query)) {
+    note("Could not open the bank request.");
+    return false;
+  }
   int code = http.GET();
+  int size = http.getSize();
+  Serial.printf("bank HTTP %d, %d bytes, heap %u, psram %u\n", code, size, ESP.getFreeHeap(), ESP.getFreePsram());
   if (code == 401) {
     settingsClearToken();
     http.end();
+    note("Login expired. Log in again.");
     return false;
   }
   if (code != 200) {
     http.end();
+    char msg[80];
+    snprintf(msg, sizeof(msg), "Bank request failed (HTTP %d).", code);
+    note(msg);
     return false;
   }
-  String response = http.getString();
-  http.end();
-  JsonDocument head;
-  if (deserializeJson(head, response)) return false;
-  bool unchanged = head["unchanged"] | false;
-  int32_t generated = head["generatedAt"] | 0;
-  const char* hash = head["hash"] | "";
-  if (unchanged) {
-    settings().bankGeneratedAt = generated;
-    strncpy(settings().bankHash, hash, sizeof(settings().bankHash) - 1);
-    settingsSave();
-    return true;
+  if (size > 0 && size < 4096) {
+    String response = http.getString();
+    http.end();
+    JsonDocument head;
+    if (deserializeJson(head, response)) {
+      note("Bank reply was not valid.");
+      return false;
+    }
+    if (head["unchanged"] | false) {
+      settings().bankGeneratedAt = head["generatedAt"] | settings().bankGeneratedAt;
+      const char* hash = head["hash"] | "";
+      if (hash[0]) strncpy(settings().bankHash, hash, sizeof(settings().bankHash) - 1);
+      settingsSave();
+      note("Bank already current.");
+      return true;
+    }
+    if (!sdReplace(SD_PATH_BANK, response.c_str(), response.length())) {
+      note("Could not write the bank to the SD card.");
+      return false;
+    }
+  } else {
+    bool saved = streamBody(http, SD_PATH_BANK);
+    http.end();
+    if (!saved) {
+      note("Could not save the bank to the SD card.");
+      return false;
+    }
   }
-  if (!head["items"].is<JsonArray>()) return false;
-  if (!sdReplace(SD_PATH_BANK, response.c_str(), response.length())) return false;
-  if (!bankLoadFile()) return false;
-  settings().bankGeneratedAt = generated;
-  strncpy(settings().bankHash, hash, sizeof(settings().bankHash) - 1);
-  settingsSave();
+  if (!bankLoadFile()) {
+    if (!psramFound()) note("Enable OPI PSRAM in Tools and upload again. The bank is too big for internal RAM.");
+    else note("Saved the bank, but it could not be loaded.");
+    return false;
+  }
+  note("Bank loaded.");
   return true;
 }
 
@@ -117,46 +192,69 @@ static bool pullPushProgress() {
   http.end();
   if (code == 401) {
     settingsClearToken();
+    note("Login expired. Log in again.");
     return false;
   }
   if (code == 200) {
-    if (!srsMergeRemote(response.c_str(), response.length())) return false;
+    if (!srsMergeRemote(response.c_str(), response.length())) {
+      note("Progress reply was not valid.");
+      return false;
+    }
   } else if (code != 404) {
+    char msg[64];
+    snprintf(msg, sizeof(msg), "Progress read failed (HTTP %d).", code);
+    note(msg);
     return false;
   }
   const char* body = srsExportJson();
   WiFiClientSecure client2;
   HTTPClient put;
-  if (!beginHttp(put, client2, url)) return false;
+  if (!beginHttp(put, client2, url)) {
+    note("Could not open the progress upload.");
+    return false;
+  }
   put.addHeader("Content-Type", "application/json");
   int putCode = put.PUT(body);
   String merged = put.getString();
   put.end();
-  if (putCode != 200) return false;
+  Serial.printf("progress PUT %d\n", putCode);
+  if (putCode != 200) {
+    char msg[64];
+    snprintf(msg, sizeof(msg), "Progress upload failed (HTTP %d).", putCode);
+    note(msg);
+    return false;
+  }
   srsMergeRemote(merged.c_str(), merged.length());
   return true;
 }
 
 SyncResult syncNow() {
-  if (wifiAirplane()) return SyncResult::Airplane;
-  if (!settingsHasWifi()) return SyncResult::Offline;
+  lastError[0] = 0;
+  if (wifiAirplane()) { note("Airplane mode is on."); return SyncResult::Airplane; }
+  if (!settingsHasWifi()) { note("No Wi-Fi saved."); return SyncResult::Offline; }
   if (!wifiConnected() && !wifiConnect(settings().ssid, settings().pass, 12000)) {
     stamp(true);
+    note("Could not join Wi-Fi.");
     return SyncResult::Offline;
   }
   configTime(0, 0, "pool.ntp.org");
-  setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
-  tzset();
+  settingsApplyTz();
   if (!settingsHasToken()) {
     stamp(true);
+    note("Log in to sync.");
     return SyncResult::Auth;
   }
   bool bankOk = pullBank();
+  char bankMsg[140];
+  strncpy(bankMsg, lastError, sizeof(bankMsg) - 1);
+  bankMsg[sizeof(bankMsg) - 1] = 0;
   bool progressOk = pullPushProgress();
-  if (!bankOk && !progressOk) {
-    stamp(true);
-    return settingsHasToken() ? SyncResult::Failed : SyncResult::Auth;
+  if (bankOk && progressOk) {
+    stamp(false);
+    note("Sync finished.");
+    return SyncResult::Ok;
   }
-  stamp(!(bankOk && progressOk));
-  return (bankOk && progressOk) ? SyncResult::Ok : SyncResult::Failed;
+  stamp(true);
+  if (!bankOk) note(bankMsg[0] ? bankMsg : "Bank sync failed.");
+  return settingsHasToken() ? SyncResult::Failed : SyncResult::Auth;
 }

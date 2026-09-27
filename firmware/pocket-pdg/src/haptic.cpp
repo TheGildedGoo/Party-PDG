@@ -48,29 +48,33 @@ void hapticBegin() {
 }
 
 bool hapticReady() { return ready; }
-static void buzz(int ms) {
-  if (!ready || !settings().hapticOn) return;
+static uint8_t levelEffect(bool hard) {
   uint8_t level = settings().hapticLevel;
   if (level < 1) level = 1;
   if (level > 5) level = 5;
-  const uint8_t amp[6] = {0, 28, 48, 72, 100, 127};
-  drv.setMode(DRV2605_MODE_REALTIME);
-  drv.setRealtimeValue(amp[level]);
-  delay(ms);
-  drv.setRealtimeValue(0);
+  const uint8_t soft[6] = {0, 9, 8, 6, 5, 4};
+  const uint8_t firm[6] = {0, 3, 6, 5, 2, 1};
+  return hard ? firm[level] : soft[level];
 }
 
-void hapticTick() { buzz(12); }
-void hapticClick() { buzz(20); }
-void hapticWrong() { buzz(36); }
+static void play(uint8_t effect) {
+  if (!ready || !settings().hapticOn || effect == 0) return;
+  drv.setMode(DRV2605_MODE_INTTRIG);
+  drv.setWaveform(0, effect);
+  drv.setWaveform(1, 0);
+  drv.go();
+}
+
+void hapticTick() { play(levelEffect(false)); }
+void hapticClick() { play(levelEffect(true)); }
+void hapticWrong() { play(settings().hapticLevel >= 4 ? 47 : levelEffect(true)); }
 
 void hapticAlarm() {
-  if (!ready || !settings().hapticOn) return;
-  buzz(40);
-  delay(180);
-  buzz(24);
+  play(levelEffect(true));
+  delay(160);
+  play(levelEffect(false));
   delay(120);
-  buzz(24);
+  play(levelEffect(false));
 }
 
 void hapticStandby() {

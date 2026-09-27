@@ -20,7 +20,7 @@
 #include "sync.h"
 #include "wifi_link.h"
 
-enum class Page { Boot, Wifi, Login, Home, Study, Notes, Settings, Quiz, Feedback, Result, Analytics, Alarm };
+enum class Page { Boot, Wifi, Login, Home, Study, Notes, Settings, Pick, Quiz, Feedback, Result, Analytics, Alarm };
 
 static Page page = Page::Boot;
 static uint32_t pageAt = 0;
@@ -35,7 +35,10 @@ static lv_obj_t* loginKb = nullptr;
 static lv_obj_t* loginBtn = nullptr;
 static lv_obj_t* skipBtn = nullptr;
 static lv_obj_t* hideBtn = nullptr;
-static bool passVisible = false;
+static int returnScroll = 0;
+static Page returnPage = Page::Boot;
+static int pickWhich = 0;
+static lv_obj_t* colorWheel = nullptr;
 
 static void showBoot();
 static void showWifi();
@@ -44,6 +47,7 @@ static void showHome();
 static void showStudy();
 static void showNotes();
 static void showSettings();
+static void showColor();
 static bool grabNotes();
 static void saveNotes();
 static void saveColors();
@@ -64,12 +68,22 @@ struct Palette {
   uint32_t accentFg;
 };
 
+static uint32_t inkOn(uint32_t color) {
+  int r = (int)((color >> 16) & 255);
+  int g = (int)((color >> 8) & 255);
+  int b = (int)(color & 255);
+  return (r * 3 + g * 6 + b) > 1400 ? 0x102033u : 0xF4F7FBu;
+}
+
 static Palette palette() {
   Settings& s = settings();
-  if (s.theme == 1) return {0x1C1C1C, 0xF4F1EA, 0x2A2A2A, 0xF4F1EA, 0xC4A35A, 0x1C1C1C};
+  if (s.theme == 1) return {0xF7F4EE, 0x1C1C1C, 0xC4A35A, 0x1C1C1C, 0x8A5A2B, 0xFFFFFF};
   if (s.theme == 2) return {0x000000, 0xFFFFFF, 0x000000, 0xFFFFFF, 0xFFFF00, 0x000000};
-  if (s.theme == 3) return {s.colorBg, s.colorFg, s.colorBtn, s.colorFg, s.colorBtn, s.colorBg};
-  return {0x0B0D10, 0xE6E6E6, 0x1A1D22, 0xE6E6E6, 0x8AB4F8, 0x0B0D10};
+  if (s.theme == 3) {
+    uint32_t ink = inkOn(s.colorBtn);
+    return {s.colorBg, s.colorFg, s.colorBtn, ink, s.colorBtn, ink};
+  }
+  return {0x000000, 0xE8F1FF, 0x8EB7FF, 0x102033, 0x8EB7FF, 0x102033};
 }
 
 static void paint(lv_obj_t* obj) {
@@ -82,6 +96,7 @@ static lv_obj_t* fresh() {
   Palette p = palette();
   lv_obj_t* scr = lv_obj_create(nullptr);
   lv_obj_set_style_bg_color(scr, lv_color_hex(p.bg), 0);
+  lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
   lv_obj_set_style_text_color(scr, lv_color_hex(p.fg), 0);
   lv_obj_set_style_text_font(scr, &lv_font_montserrat_16, 0);
   lv_obj_set_style_pad_all(scr, 8, 0);
@@ -103,6 +118,32 @@ static lv_obj_t* addLabel(lv_obj_t* parent, const char* text, const lv_font_t* f
 
 static void onTap(lv_event_t* e);
 
+static void addHome(lv_obj_t* scr) {
+  Palette p = palette();
+  lv_obj_set_style_pad_top(scr, 36, 0);
+  lv_obj_t* btn = lv_btn_create(scr);
+  lv_obj_add_flag(btn, LV_OBJ_FLAG_FLOATING);
+  lv_obj_set_size(btn, 36, 28);
+  lv_obj_align(btn, LV_ALIGN_TOP_LEFT, 4, 4);
+  lv_obj_set_style_bg_color(btn, lv_color_hex(p.btn), 0);
+  lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, 0);
+  lv_obj_set_style_text_color(btn, lv_color_hex(p.btnFg), 0);
+  lv_obj_set_style_pad_all(btn, 0, 0);
+  lv_obj_add_event_cb(btn, onTap, LV_EVENT_CLICKED, (void*)(intptr_t)7);
+  lv_obj_t* lab = lv_label_create(btn);
+  lv_label_set_text(lab, LV_SYMBOL_HOME);
+  lv_obj_center(lab);
+}
+
+static void restoreScroll(lv_obj_t* scr, Page which) {
+  if (returnPage == which && returnScroll > 0) {
+    lv_obj_update_layout(scr);
+    lv_obj_scroll_to_y(scr, returnScroll, LV_ANIM_OFF);
+  }
+  returnPage = Page::Boot;
+  returnScroll = 0;
+}
+
 static lv_obj_t* addButton(lv_obj_t* parent, const char* text, intptr_t act, bool accent) {
   Palette p = palette();
   lv_obj_t* btn = lv_btn_create(parent);
@@ -114,6 +155,7 @@ static lv_obj_t* addButton(lv_obj_t* parent, const char* text, intptr_t act, boo
   lv_obj_set_style_pad_left(btn, 8, 0);
   lv_obj_set_style_pad_right(btn, 8, 0);
   lv_obj_set_style_bg_color(btn, lv_color_hex(accent ? p.accent : p.btn), 0);
+  lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, 0);
   lv_obj_set_style_text_color(btn, lv_color_hex(accent ? p.accentFg : p.btnFg), 0);
   if (settings().theme == 2) {
     lv_obj_set_style_border_width(btn, 2, 0);
@@ -159,6 +201,8 @@ static void adjustSlot(int index, int delta) {
 
 static void onTap(lv_event_t* e) {
   intptr_t act = (intptr_t)lv_event_get_user_data(e);
+  returnPage = page;
+  returnScroll = lv_obj_get_scroll_y(lv_scr_act());
   hapticTick();
   powerWakeScreen();
   if (act == 1) {
@@ -177,10 +221,10 @@ static void onTap(lv_event_t* e) {
   if (act == 3) { startBuiltQuiz(); return; }
   if (act == 4) {
     SyncResult result = syncNow();
-    if (result == SyncResult::Airplane) strncpy(statusLine, "Airplane mode is on.", sizeof(statusLine) - 1);
-    else if (result == SyncResult::Auth) strncpy(statusLine, "Log in to sync.", sizeof(statusLine) - 1);
+    const char* why = syncLastError();
+    if (why && why[0]) strncpy(statusLine, why, sizeof(statusLine) - 1);
     else if (result == SyncResult::Ok) strncpy(statusLine, "Sync finished.", sizeof(statusLine) - 1);
-    else strncpy(statusLine, "Sync failed. Local study kept.", sizeof(statusLine) - 1);
+    else strncpy(statusLine, "Sync failed.", sizeof(statusLine) - 1);
     showHome();
     return;
   }
@@ -219,6 +263,35 @@ static void onTap(lv_event_t* e) {
     settings().hapticLevel = (uint8_t)(act - 69);
     settingsSave();
     hapticClick();
+    showSettings();
+    return;
+  }
+  if (act >= 84 && act <= 86) {
+    pickWhich = (int)act - 84;
+    if (settings().theme != 3) {
+      Palette p = palette();
+      settings().colorBg = p.bg;
+      settings().colorFg = p.fg;
+      settings().colorBtn = p.btn;
+    }
+    showColor();
+    return;
+  }
+  if (act >= 88 && act <= 90) {
+    if (colorWheel) lv_colorwheel_set_mode(colorWheel, (lv_colorwheel_mode_t)(act - 88));
+    return;
+  }
+  if (act == 87) {
+    if (colorWheel) {
+      lv_color_t c = lv_colorwheel_get_rgb(colorWheel);
+      uint32_t packed = lv_color_to32(c) & 0xFFFFFFu;
+      if (pickWhich == 0) settings().colorBg = packed;
+      else if (pickWhich == 1) settings().colorFg = packed;
+      else settings().colorBtn = packed;
+      settings().theme = 3;
+      settingsSave();
+      strncpy(statusLine, "Color saved.", sizeof(statusLine) - 1);
+    }
     showSettings();
     return;
   }
@@ -392,10 +465,12 @@ static void showLogin() {
   page = Page::Login;
   pageAt = millis();
   passVisible = false;
+  Palette p = palette();
   lv_obj_t* scr = lv_obj_create(nullptr);
   lv_obj_set_size(scr, 320, 240);
-  lv_obj_set_style_bg_color(scr, lv_color_hex(0x1C1C1C), 0);
-  lv_obj_set_style_text_color(scr, lv_color_hex(0xF4F1EA), 0);
+  lv_obj_set_style_bg_color(scr, lv_color_hex(p.bg), 0);
+  lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
+  lv_obj_set_style_text_color(scr, lv_color_hex(p.fg), 0);
   lv_obj_set_style_text_font(scr, &lv_font_montserrat_16, 0);
   lv_obj_set_style_pad_all(scr, 0, 0);
   lv_obj_clear_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
@@ -696,12 +771,14 @@ static void showHome() {
   addButton(scr, "Sync now", 4, false);
   addButton(scr, "Analytics", 5, false);
   addButton(scr, "Sleep", 6, false);
+  restoreScroll(scr, Page::Home);
 }
 
 static void showStudy() {
   page = Page::Study;
   pageAt = millis();
   lv_obj_t* scr = fresh();
+  addHome(scr);
   addLabel(scr, "Study configuration", &lv_font_montserrat_20);
   addLabel(scr, "Rank", &lv_font_montserrat_14);
   addButton(scr, settings().rank == 5 ? "E-5 track  (on)" : "E-5 track", 20, settings().rank == 5);
@@ -723,13 +800,14 @@ static void showStudy() {
     snprintf(text, sizeof(text), "%s Ch %d %s", on ? "[x]" : "[ ]", chapters[i].number, chapters[i].title);
     addButton(scr, text, 100 + chapters[i].number - 1, false);
   }
-  addButton(scr, "Home", 7, true);
+  restoreScroll(scr, Page::Study);
 }
 
 static void showNotes() {
   page = Page::Notes;
   pageAt = millis();
   lv_obj_t* scr = fresh();
+  addHome(scr);
   lv_obj_set_style_pad_bottom(scr, 130, 0);
   addLabel(scr, "Notifications", &lv_font_montserrat_20);
   addLabel(scr, settings().clock12 ? "Times like 7:30 AM" : "Times like 07:30", &lv_font_montserrat_14);
@@ -758,13 +836,14 @@ static void showNotes() {
   noteBox[7] = field(scr, end, kb);
   addButton(scr, settings().quietOn ? "Quiet hours on" : "Quiet hours off", 330, settings().quietOn);
   addButton(scr, "Save times", 45, true);
-  addButton(scr, "Home", 7, false);
+  restoreScroll(scr, Page::Notes);
 }
 
 static void showSettings() {
   page = Page::Settings;
   pageAt = millis();
   lv_obj_t* scr = fresh();
+  addHome(scr);
   lv_obj_set_style_pad_bottom(scr, 130, 0);
   addLabel(scr, "Settings", &lv_font_montserrat_20);
   if (statusLine[0]) addLabel(scr, statusLine, &lv_font_montserrat_14);
@@ -772,24 +851,15 @@ static void showSettings() {
   addButton(scr, settings().theme == 0 ? "Dark  (on)" : "Dark", 15, settings().theme == 0);
   addButton(scr, settings().theme == 1 ? "Light  (on)" : "Light", 16, settings().theme == 1);
   addButton(scr, settings().theme == 2 ? "High contrast  (on)" : "High contrast", 17, settings().theme == 2);
-  addLabel(scr, "Custom colors, 6 hex digits", &lv_font_montserrat_14);
+  addButton(scr, "Background color", 84, false);
+  addButton(scr, "Text color", 85, false);
+  addButton(scr, "Button color", 86, false);
   lv_obj_t* kb = lv_keyboard_create(scr);
   lv_obj_add_flag(kb, LV_OBJ_FLAG_FLOATING);
   lv_obj_set_size(kb, 320, 120);
   lv_obj_align(kb, LV_ALIGN_BOTTOM_MID, 0, 0);
   lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
   lv_obj_add_event_cb(kb, onKb, LV_EVENT_ALL, nullptr);
-  char hex[8];
-  snprintf(hex, sizeof(hex), "%06X", settings().colorBg);
-  addLabel(scr, "Background", &lv_font_montserrat_14);
-  colorBox[0] = field(scr, hex, kb);
-  snprintf(hex, sizeof(hex), "%06X", settings().colorFg);
-  addLabel(scr, "Text", &lv_font_montserrat_14);
-  colorBox[1] = field(scr, hex, kb);
-  snprintf(hex, sizeof(hex), "%06X", settings().colorBtn);
-  addLabel(scr, "Button", &lv_font_montserrat_14);
-  colorBox[2] = field(scr, hex, kb);
-  addButton(scr, "Apply custom colors", 19, settings().theme == 3);
   addLabel(scr, "Brightness", &lv_font_montserrat_14);
   Palette p = palette();
   lv_obj_t* slider = lv_slider_create(scr);
@@ -822,7 +892,25 @@ static void showSettings() {
   addLabel(scr, settings().clock12 ? "And time, like 7:30 AM" : "And time, like 19:30", &lv_font_montserrat_14);
   timeBox = field(scr, "", kb);
   addButton(scr, "Set clock", 47, false);
-  addButton(scr, "Home", 7, false);
+  restoreScroll(scr, Page::Settings);
+}
+
+static void showColor() {
+  page = Page::Pick;
+  pageAt = millis();
+  const char* name = pickWhich == 0 ? "Background" : pickWhich == 1 ? "Text" : "Buttons";
+  uint32_t current = pickWhich == 0 ? settings().colorBg : pickWhich == 1 ? settings().colorFg : settings().colorBtn;
+  lv_obj_t* scr = fresh();
+  addHome(scr);
+  addLabel(scr, name, &lv_font_montserrat_20);
+  colorWheel = lv_colorwheel_create(scr, true);
+  lv_obj_set_size(colorWheel, 168, 168);
+  lv_obj_set_style_align(colorWheel, LV_ALIGN_CENTER, 0);
+  lv_colorwheel_set_rgb(colorWheel, lv_color_hex(current));
+  addButton(scr, "Hue", 88, false);
+  addButton(scr, "Saturation", 89, false);
+  addButton(scr, "Brightness", 90, false);
+  addButton(scr, "Use this color", 87, true);
 }
 
 static void showQuiz() {
@@ -831,18 +919,19 @@ static void showQuiz() {
   const Mcq* item = quizCurrent();
   if (!item) { showResult(); return; }
   lv_obj_t* scr = fresh();
+  addHome(scr);
   char meta[64];
   snprintf(meta, sizeof(meta), "%d / %d    Ch %u %s", quizPos() + 1, quizLength(), item->chapter, item->section);
   addLabel(scr, meta, &lv_font_montserrat_14);
   addLabel(scr, item->question, &lv_font_montserrat_16);
   for (int i = 0; i < 4; i++) addButton(scr, item->choice[i], 400 + i, false);
-  addButton(scr, "Home", 7, false);
 }
 
 static void showFeedback() {
   page = Page::Feedback;
   const Mcq* item = quizCurrent();
   lv_obj_t* scr = fresh();
+  addHome(scr);
   addLabel(scr, feedbackOk ? "Correct" : "Not quite", feedbackOk ? &lv_font_montserrat_28 : &lv_font_montserrat_28);
   if (item) {
     addLabel(scr, item->choice[item->answer], &lv_font_montserrat_16);
@@ -856,18 +945,17 @@ static void showFeedback() {
   lv_obj_set_style_bg_color(scr, color, 0);
   lv_obj_set_style_text_color(scr, lv_color_hex(0xFFFFFF), 0);
   addButton(scr, quizFinished() ? "See score" : "Next", 10, true);
-  addButton(scr, "Home", 7, false);
 }
 
 static void showResult() {
   page = Page::Result;
   pageAt = millis();
   lv_obj_t* scr = fresh();
+  addHome(scr);
   char line[48];
   snprintf(line, sizeof(line), "%d / %d", quizScore(), quizLength());
   addLabel(scr, "Session", &lv_font_montserrat_14);
   addLabel(scr, line, &lv_font_montserrat_28);
-  addButton(scr, "Home", 7, false);
   addButton(scr, "Retry misses", 8, true);
   addButton(scr, "Sleep", 6, false);
 }
@@ -876,6 +964,7 @@ static void showAnalytics() {
   page = Page::Analytics;
   pageAt = millis();
   lv_obj_t* scr = fresh();
+  addHome(scr);
   addLabel(scr, "Missed", &lv_font_montserrat_20);
   char filter[40];
   snprintf(filter, sizeof(filter), analyticsChapter ? "Chapter %d" : "All chapters", analyticsChapter);
@@ -912,7 +1001,6 @@ static void showAnalytics() {
     snprintf(text, sizeof(text), "Only ch %d", shownChapters[k]);
     addButton(scr, text, 60 + shownChapters[k], false);
   }
-  addButton(scr, "Home", 7, true);
 }
 
 static void showAlarm() {
@@ -955,6 +1043,6 @@ void uiLoop() {
   }
   if (page == Page::Alarm && millis() - pageAt > 45000) powerSleepUntilSchedule();
   bool waiting = page == Page::Home || page == Page::Study || page == Page::Notes || page == Page::Settings
-      || page == Page::Result || page == Page::Analytics || page == Page::Wifi || page == Page::Login;
+      || page == Page::Result || page == Page::Analytics || page == Page::Wifi || page == Page::Login || page == Page::Pick;
   if (page != Page::Alarm) powerDimCheck(waiting);
 }

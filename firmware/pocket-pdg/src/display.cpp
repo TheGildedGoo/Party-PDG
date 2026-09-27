@@ -87,7 +87,9 @@ void displayBegin() {
   dispDrv.ver_res = 240;
   dispDrv.flush_cb = flush;
   dispDrv.draw_buf = &drawBuf;
-  lv_disp_drv_register(&dispDrv);
+  lv_disp_t* disp = lv_disp_drv_register(&dispDrv);
+  lv_disp_set_bg_color(disp, lv_color_hex(0x000000));
+  lv_disp_set_bg_opa(disp, LV_OPA_COVER);
   static lv_indev_drv_t indev;
   lv_indev_drv_init(&indev);
   indev.type = LV_INDEV_TYPE_POINTER;

@@ -48,7 +48,7 @@ bool sdReplace(const char* path, const uint8_t* data, size_t length) {
   if (!ready || !path || !data) return false;
   char tmp[80];
   snprintf(tmp, sizeof(tmp), "%s.tmp", path);
-  SD_MMC.remove(tmp);
+  if (SD_MMC.exists(tmp)) SD_MMC.remove(tmp);
   File file = SD_MMC.open(tmp, FILE_WRITE);
   if (!file) return false;
   size_t wrote = file.write(data, length);

@@ -5,6 +5,7 @@
 #include <string.h>
 #include "fixture_bank.h"
 #include "sd_store.h"
+#include "settings.h"
 
 static Mcq* items = nullptr;
 static int count = 0;
@@ -186,6 +187,11 @@ bool bankIngest(const char* json, size_t length) {
     copyText(ch.waps, sizeof(ch.waps), raw["waps"] | "off");
   }
   if (chapterCount == 0) setChaptersFixture();
+  const char* hash = doc["hash"] | "";
+  if (hash[0]) strncpy(settings().bankHash, hash, sizeof(settings().bankHash) - 1);
+  int32_t generated = doc["generatedAt"] | 0;
+  if (generated) settings().bankGeneratedAt = generated;
+  settingsSave();
   return wrote > 0;
 }
 
