@@ -14,17 +14,31 @@ void i2cBegin() {
   if (started) return;
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
   Wire.setClock(100000);
+  Wire.setTimeOut(20);
+  pinMode(PIN_TP_INT, INPUT);
   pinMode(PIN_TP_RST, OUTPUT);
   digitalWrite(PIN_TP_RST, LOW);
-  delay(8);
+  delay(10);
   digitalWrite(PIN_TP_RST, HIGH);
-  delay(40);
+  delay(120);
+  Wire.beginTransmission(TP_I2C_ADDR);
+  Wire.write(0x00);
+  Wire.write(0x00);
+  Wire.endTransmission();
+  Wire.beginTransmission(TP_I2C_ADDR);
+  Wire.write(0xA4);
+  Wire.write(0x00);
+  Wire.endTransmission();
   started = true;
 }
 
 static bool probe(uint8_t addr) {
-  Wire.beginTransmission(addr);
-  return Wire.endTransmission() == 0;
+  for (int i = 0; i < 5; i++) {
+    Wire.beginTransmission(addr);
+    if (Wire.endTransmission() == 0) return true;
+    delay(20);
+  }
+  return false;
 }
 
 void i2cScan(bool* touch, bool* haptic, bool* codec) {

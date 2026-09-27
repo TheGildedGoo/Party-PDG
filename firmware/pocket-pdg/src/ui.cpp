@@ -38,7 +38,6 @@ static lv_obj_t* hideBtn = nullptr;
 static int returnScroll = 0;
 static Page returnPage = Page::Boot;
 static int pickWhich = 0;
-static lv_obj_t* colorWheel = nullptr;
 static bool passVisible = false;
 
 static void showBoot();
@@ -87,25 +86,114 @@ static Palette palette() {
   return {0x000000, 0xE8F1FF, 0x8EB7FF, 0x102033, 0x8EB7FF, 0x102033};
 }
 
-static void paint(lv_obj_t* obj) {
+static lv_obj_t* pageScr = nullptr;
+static lv_obj_t* pageBody = nullptr;
+static lv_obj_t* topBar = nullptr;
+static lv_obj_t* barClock = nullptr;
+static lv_obj_t* barWifi = nullptr;
+static lv_obj_t* pickPreview = nullptr;
+static lv_color_hsv_t pickHsv;
+
+static void wifiBadge(char* dst, size_t n);
+static void onTap(lv_event_t* e);
+
+static void clockText(char* dst, size_t n) {
+  time_t now = time(nullptr);
+  struct tm local;
+  if (now < 1700000000 || !localtime_r(&now, &local)) {
+    snprintf(dst, n, "--:--");
+    return;
+  }
+  if (settings().clock12) {
+    int h = local.tm_hour % 12;
+    if (h == 0) h = 12;
+    snprintf(dst, n, "%d:%02d%s %d/%d", h, local.tm_min, local.tm_hour >= 12 ? "p" : "a", local.tm_mon + 1, local.tm_mday);
+  } else {
+    snprintf(dst, n, "%02d:%02d %d/%d", local.tm_hour, local.tm_min, local.tm_mon + 1, local.tm_mday);
+  }
+}
+
+static void refreshBar() {
+  if (!barClock || !barWifi) return;
+  char clock[32];
+  char badge[40];
+  clockText(clock, sizeof(clock));
+  wifiBadge(badge, sizeof(badge));
+  if (strcmp(lv_label_get_text(barClock), clock) != 0) lv_label_set_text(barClock, clock);
+  if (strcmp(lv_label_get_text(barWifi), badge) != 0) lv_label_set_text(barWifi, badge);
+}
+
+static void buildBar(lv_obj_t* scr) {
   Palette p = palette();
-  lv_obj_set_style_bg_color(obj, lv_color_hex(p.bg), 0);
-  lv_obj_set_style_text_color(obj, lv_color_hex(p.fg), 0);
+  topBar = lv_obj_create(scr);
+  lv_obj_set_pos(topBar, 0, 0);
+  lv_obj_set_size(topBar, 320, 26);
+  lv_obj_add_flag(topBar, LV_OBJ_FLAG_FLOATING);
+  lv_obj_clear_flag(topBar, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_set_style_radius(topBar, 0, 0);
+  lv_obj_set_style_border_width(topBar, 0, 0);
+  lv_obj_set_style_pad_all(topBar, 0, 0);
+  lv_obj_set_style_bg_color(topBar, lv_color_hex(0x000000), 0);
+  lv_obj_set_style_bg_opa(topBar, LV_OPA_COVER, 0);
+  lv_obj_set_style_text_color(topBar, lv_color_hex(p.fg), 0);
+
+  lv_obj_t* home = lv_btn_create(topBar);
+  lv_obj_set_pos(home, 0, 0);
+  lv_obj_set_size(home, 26, 26);
+  lv_obj_set_style_radius(home, 0, 0);
+  lv_obj_set_style_pad_all(home, 0, 0);
+  lv_obj_set_style_bg_color(home, lv_color_hex(p.btn), 0);
+  lv_obj_set_style_bg_opa(home, LV_OPA_COVER, 0);
+  lv_obj_set_style_text_color(home, lv_color_hex(p.btnFg), 0);
+  lv_obj_add_event_cb(home, onTap, LV_EVENT_CLICKED, (void*)(intptr_t)7);
+  lv_obj_t* icon = lv_label_create(home);
+  lv_label_set_text(icon, LV_SYMBOL_HOME);
+  lv_obj_center(icon);
+
+  barClock = lv_label_create(topBar);
+  lv_obj_set_style_text_font(barClock, &lv_font_montserrat_14, 0);
+  lv_obj_set_style_text_color(barClock, lv_color_hex(0xE8F1FF), 0);
+  lv_label_set_text(barClock, "--:--");
+  lv_obj_align(barClock, LV_ALIGN_LEFT_MID, 30, 0);
+
+  barWifi = lv_label_create(topBar);
+  lv_obj_set_width(barWifi, 118);
+  lv_obj_set_style_text_font(barWifi, &lv_font_montserrat_14, 0);
+  lv_obj_set_style_text_color(barWifi, lv_color_hex(0xE8F1FF), 0);
+  lv_obj_set_style_text_align(barWifi, LV_TEXT_ALIGN_RIGHT, 0);
+  lv_label_set_long_mode(barWifi, LV_LABEL_LONG_DOT);
+  lv_label_set_text(barWifi, "");
+  lv_obj_align(barWifi, LV_ALIGN_RIGHT_MID, -2, 0);
+  refreshBar();
+  lv_obj_move_foreground(topBar);
 }
 
 static lv_obj_t* fresh() {
   Palette p = palette();
   lv_obj_t* scr = lv_obj_create(nullptr);
+  pageScr = scr;
+  lv_obj_set_size(scr, 320, 240);
   lv_obj_set_style_bg_color(scr, lv_color_hex(p.bg), 0);
   lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
   lv_obj_set_style_text_color(scr, lv_color_hex(p.fg), 0);
   lv_obj_set_style_text_font(scr, &lv_font_montserrat_16, 0);
-  lv_obj_set_style_pad_all(scr, 8, 0);
-  lv_obj_set_style_pad_row(scr, 6, 0);
-  lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_COLUMN);
-  lv_obj_set_scrollbar_mode(scr, LV_SCROLLBAR_MODE_AUTO);
+  lv_obj_set_style_pad_all(scr, 0, 0);
+  lv_obj_clear_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
   lv_scr_load_anim(scr, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
-  return scr;
+  buildBar(scr);
+  pageBody = lv_obj_create(scr);
+  lv_obj_set_pos(pageBody, 0, 26);
+  lv_obj_set_size(pageBody, 320, 214);
+  lv_obj_set_style_bg_color(pageBody, lv_color_hex(p.bg), 0);
+  lv_obj_set_style_bg_opa(pageBody, LV_OPA_COVER, 0);
+  lv_obj_set_style_border_width(pageBody, 0, 0);
+  lv_obj_set_style_radius(pageBody, 0, 0);
+  lv_obj_set_style_pad_all(pageBody, 6, 0);
+  lv_obj_set_style_pad_row(pageBody, 6, 0);
+  lv_obj_set_flex_flow(pageBody, LV_FLEX_FLOW_COLUMN);
+  lv_obj_set_scrollbar_mode(pageBody, LV_SCROLLBAR_MODE_AUTO);
+  lv_obj_move_foreground(topBar);
+  return pageBody;
 }
 
 static lv_obj_t* addLabel(lv_obj_t* parent, const char* text, const lv_font_t* font) {
@@ -119,27 +207,10 @@ static lv_obj_t* addLabel(lv_obj_t* parent, const char* text, const lv_font_t* f
 
 static void onTap(lv_event_t* e);
 
-static void addHome(lv_obj_t* scr) {
-  Palette p = palette();
-  lv_obj_set_style_pad_top(scr, 36, 0);
-  lv_obj_t* btn = lv_btn_create(scr);
-  lv_obj_add_flag(btn, LV_OBJ_FLAG_FLOATING);
-  lv_obj_set_size(btn, 36, 28);
-  lv_obj_align(btn, LV_ALIGN_TOP_LEFT, 4, 4);
-  lv_obj_set_style_bg_color(btn, lv_color_hex(p.btn), 0);
-  lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, 0);
-  lv_obj_set_style_text_color(btn, lv_color_hex(p.btnFg), 0);
-  lv_obj_set_style_pad_all(btn, 0, 0);
-  lv_obj_add_event_cb(btn, onTap, LV_EVENT_CLICKED, (void*)(intptr_t)7);
-  lv_obj_t* lab = lv_label_create(btn);
-  lv_label_set_text(lab, LV_SYMBOL_HOME);
-  lv_obj_center(lab);
-}
-
-static void restoreScroll(lv_obj_t* scr, Page which) {
-  if (returnPage == which && returnScroll > 0) {
-    lv_obj_update_layout(scr);
-    lv_obj_scroll_to_y(scr, returnScroll, LV_ANIM_OFF);
+static void restoreScroll(Page which) {
+  if (pageBody && returnPage == which && returnScroll > 0) {
+    lv_obj_update_layout(pageBody);
+    lv_obj_scroll_to_y(pageBody, returnScroll, LV_ANIM_OFF);
   }
   returnPage = Page::Boot;
   returnScroll = 0;
@@ -203,7 +274,7 @@ static void adjustSlot(int index, int delta) {
 static void onTap(lv_event_t* e) {
   intptr_t act = (intptr_t)lv_event_get_user_data(e);
   returnPage = page;
-  returnScroll = lv_obj_get_scroll_y(lv_scr_act());
+  returnScroll = pageBody ? lv_obj_get_scroll_y(pageBody) : 0;
   hapticTick();
   powerWakeScreen();
   if (act == 1) {
@@ -278,21 +349,15 @@ static void onTap(lv_event_t* e) {
     showColor();
     return;
   }
-  if (act >= 88 && act <= 90) {
-    if (colorWheel) lv_colorwheel_set_mode(colorWheel, (lv_colorwheel_mode_t)(act - 88));
-    return;
-  }
   if (act == 87) {
-    if (colorWheel) {
-      lv_color_t c = lv_colorwheel_get_rgb(colorWheel);
-      uint32_t packed = lv_color_to32(c) & 0xFFFFFFu;
-      if (pickWhich == 0) settings().colorBg = packed;
-      else if (pickWhich == 1) settings().colorFg = packed;
-      else settings().colorBtn = packed;
-      settings().theme = 3;
-      settingsSave();
-      strncpy(statusLine, "Color saved.", sizeof(statusLine) - 1);
-    }
+    lv_color_t c = lv_color_hsv_to_rgb(pickHsv.h, pickHsv.s, pickHsv.v);
+    uint32_t packed = lv_color_to32(c) & 0xFFFFFFu;
+    if (pickWhich == 0) settings().colorBg = packed;
+    else if (pickWhich == 1) settings().colorFg = packed;
+    else settings().colorBtn = packed;
+    settings().theme = 3;
+    settingsSave();
+    strncpy(statusLine, "Color saved.", sizeof(statusLine) - 1);
     showSettings();
     return;
   }
@@ -440,11 +505,12 @@ static void showBoot() {
   pageAt = millis();
   bool touch = false, motor = false, codec = false;
   i2cScan(&touch, &motor, &codec);
+  if (hapticReady()) motor = true;
   lv_obj_t* scr = fresh();
   addLabel(scr, "Pocket PDG", &lv_font_montserrat_28);
   char line[96];
-  snprintf(line, sizeof(line), "Touch %s   Motor %s\nCodec %s",
-           touch ? "0x38" : "missing", motor ? "0x5A" : "missing", codec ? "0x18" : "missing");
+  snprintf(line, sizeof(line), "Touch %s\nMotor %s\nCodec %s",
+           touch ? "ready" : "waking", motor ? "ready" : "missing", codec ? "ready" : "off");
   addLabel(scr, line, &lv_font_montserrat_16);
   addLabel(scr, sdReady() ? sdStatus() : "No SD card", &lv_font_montserrat_16);
   addLabel(scr, "Unofficial study aid.", &lv_font_montserrat_14);
@@ -476,17 +542,20 @@ static void showLogin() {
   lv_obj_set_style_pad_all(scr, 0, 0);
   lv_obj_clear_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
   lv_scr_load_anim(scr, LV_SCR_LOAD_ANIM_NONE, 0, 0, true);
+  pageScr = scr;
+  pageBody = nullptr;
+  buildBar(scr);
 
   lv_obj_t* title = addLabel(scr, "Log in", &lv_font_montserrat_16);
-  lv_obj_set_pos(title, 8, 4);
+  lv_obj_set_pos(title, 8, 30);
   if (statusLine[0]) {
     lv_obj_t* status = addLabel(scr, statusLine, &lv_font_montserrat_14);
-    lv_obj_set_pos(status, 70, 6);
+    lv_obj_set_pos(status, 70, 32);
     lv_obj_set_width(status, 160);
   }
 
   hideBtn = lv_btn_create(scr);
-  lv_obj_set_pos(hideBtn, 236, 2);
+  lv_obj_set_pos(hideBtn, 236, 28);
   lv_obj_set_size(hideBtn, 78, 26);
   lv_obj_set_style_bg_color(hideBtn, lv_color_hex(0x2A2A2A), 0);
   lv_obj_add_event_cb(hideBtn, onHideKey, LV_EVENT_CLICKED, nullptr);
@@ -498,18 +567,18 @@ static void showLogin() {
   lv_textarea_set_placeholder_text(emailBox, "Email");
   lv_textarea_set_one_line(emailBox, true);
   lv_textarea_set_text(emailBox, settings().email);
-  lv_obj_set_pos(emailBox, 6, 32);
+  lv_obj_set_pos(emailBox, 6, 56);
   lv_obj_set_size(emailBox, 308, 34);
 
   passBox = lv_textarea_create(scr);
   lv_textarea_set_placeholder_text(passBox, "Password");
   lv_textarea_set_one_line(passBox, true);
   lv_textarea_set_password_mode(passBox, true);
-  lv_obj_set_pos(passBox, 6, 70);
+  lv_obj_set_pos(passBox, 6, 94);
   lv_obj_set_size(passBox, 200, 34);
 
   lv_obj_t* show = lv_btn_create(scr);
-  lv_obj_set_pos(show, 212, 70);
+  lv_obj_set_pos(show, 212, 94);
   lv_obj_set_size(show, 102, 34);
   lv_obj_set_style_bg_color(show, lv_color_hex(0x2A2A2A), 0);
   lv_obj_add_event_cb(show, onShowPass, LV_EVENT_CLICKED, nullptr);
@@ -518,13 +587,15 @@ static void showLogin() {
   lv_obj_center(showLab);
 
   loginKb = lv_keyboard_create(scr);
-  lv_obj_set_size(loginKb, 320, 124);
+  lv_obj_add_flag(loginKb, LV_OBJ_FLAG_FLOATING);
+  lv_obj_set_size(loginKb, 320, 100);
   lv_obj_align(loginKb, LV_ALIGN_BOTTOM_MID, 0, 0);
   lv_obj_set_style_text_font(loginKb, &lv_font_montserrat_14, LV_PART_ITEMS);
   lv_keyboard_set_textarea(loginKb, emailBox);
   lv_obj_add_event_cb(loginKb, onKb, LV_EVENT_ALL, nullptr);
   lv_obj_add_event_cb(emailBox, onFocus, LV_EVENT_FOCUSED, loginKb);
   lv_obj_add_event_cb(passBox, onFocus, LV_EVENT_FOCUSED, loginKb);
+  if (topBar) lv_obj_move_foreground(topBar);
 
   loginBtn = addButton(scr, "Log in", 1, true);
   lv_obj_set_pos(loginBtn, 6, 150);
@@ -735,22 +806,7 @@ static void showHome() {
   skipBtn = nullptr;
   hideBtn = nullptr;
   lv_obj_t* scr = fresh();
-  lv_obj_t* bar = lv_obj_create(scr);
-  lv_obj_set_width(bar, lv_pct(100));
-  lv_obj_set_height(bar, LV_SIZE_CONTENT);
-  lv_obj_set_flex_flow(bar, LV_FLEX_FLOW_ROW);
-  lv_obj_set_style_bg_opa(bar, LV_OPA_TRANSP, 0);
-  lv_obj_set_style_border_width(bar, 0, 0);
-  lv_obj_set_style_pad_all(bar, 0, 0);
-  lv_obj_t* title = lv_label_create(bar);
-  lv_label_set_text(title, "Pocket PDG");
-  lv_obj_set_style_text_font(title, &lv_font_montserrat_20, 0);
-  lv_obj_set_flex_grow(title, 1);
-  char badge[48];
-  wifiBadge(badge, sizeof(badge));
-  lv_obj_t* wifi = lv_label_create(bar);
-  lv_label_set_text(wifi, badge);
-  lv_obj_set_style_text_font(wifi, &lv_font_montserrat_14, 0);
+  addLabel(scr, "Pocket PDG", &lv_font_montserrat_20);
   int bat = powerBatteryPercent();
   char head[64];
   if (bat < 0) snprintf(head, sizeof(head), "Battery n/a");
@@ -772,14 +828,13 @@ static void showHome() {
   addButton(scr, "Sync now", 4, false);
   addButton(scr, "Analytics", 5, false);
   addButton(scr, "Sleep", 6, false);
-  restoreScroll(scr, Page::Home);
+  restoreScroll(Page::Home);
 }
 
 static void showStudy() {
   page = Page::Study;
   pageAt = millis();
   lv_obj_t* scr = fresh();
-  addHome(scr);
   addLabel(scr, "Study configuration", &lv_font_montserrat_20);
   addLabel(scr, "Rank", &lv_font_montserrat_14);
   addButton(scr, settings().rank == 5 ? "E-5 track  (on)" : "E-5 track", 20, settings().rank == 5);
@@ -801,21 +856,20 @@ static void showStudy() {
     snprintf(text, sizeof(text), "%s Ch %d %s", on ? "[x]" : "[ ]", chapters[i].number, chapters[i].title);
     addButton(scr, text, 100 + chapters[i].number - 1, false);
   }
-  restoreScroll(scr, Page::Study);
+  restoreScroll(Page::Study);
 }
 
 static void showNotes() {
   page = Page::Notes;
   pageAt = millis();
   lv_obj_t* scr = fresh();
-  addHome(scr);
   lv_obj_set_style_pad_bottom(scr, 130, 0);
   addLabel(scr, "Notifications", &lv_font_montserrat_20);
   addLabel(scr, settings().clock12 ? "Times like 7:30 AM" : "Times like 07:30", &lv_font_montserrat_14);
   if (statusLine[0]) addLabel(scr, statusLine, &lv_font_montserrat_14);
-  lv_obj_t* kb = lv_keyboard_create(scr);
+  lv_obj_t* kb = lv_keyboard_create(pageScr);
   lv_obj_add_flag(kb, LV_OBJ_FLAG_FLOATING);
-  lv_obj_set_size(kb, 320, 120);
+  lv_obj_set_size(kb, 320, 100);
   lv_obj_align(kb, LV_ALIGN_BOTTOM_MID, 0, 0);
   lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
   lv_obj_add_event_cb(kb, onKb, LV_EVENT_ALL, nullptr);
@@ -837,14 +891,13 @@ static void showNotes() {
   noteBox[7] = field(scr, end, kb);
   addButton(scr, settings().quietOn ? "Quiet hours on" : "Quiet hours off", 330, settings().quietOn);
   addButton(scr, "Save times", 45, true);
-  restoreScroll(scr, Page::Notes);
+  restoreScroll(Page::Notes);
 }
 
 static void showSettings() {
   page = Page::Settings;
   pageAt = millis();
   lv_obj_t* scr = fresh();
-  addHome(scr);
   lv_obj_set_style_pad_bottom(scr, 130, 0);
   addLabel(scr, "Settings", &lv_font_montserrat_20);
   if (statusLine[0]) addLabel(scr, statusLine, &lv_font_montserrat_14);
@@ -855,9 +908,9 @@ static void showSettings() {
   addButton(scr, "Background color", 84, false);
   addButton(scr, "Text color", 85, false);
   addButton(scr, "Button color", 86, false);
-  lv_obj_t* kb = lv_keyboard_create(scr);
+  lv_obj_t* kb = lv_keyboard_create(pageScr);
   lv_obj_add_flag(kb, LV_OBJ_FLAG_FLOATING);
-  lv_obj_set_size(kb, 320, 120);
+  lv_obj_set_size(kb, 320, 100);
   lv_obj_align(kb, LV_ALIGN_BOTTOM_MID, 0, 0);
   lv_obj_add_flag(kb, LV_OBJ_FLAG_HIDDEN);
   lv_obj_add_event_cb(kb, onKb, LV_EVENT_ALL, nullptr);
@@ -893,7 +946,30 @@ static void showSettings() {
   addLabel(scr, settings().clock12 ? "And time, like 7:30 AM" : "And time, like 19:30", &lv_font_montserrat_14);
   timeBox = field(scr, "", kb);
   addButton(scr, "Set clock", 47, false);
-  restoreScroll(scr, Page::Settings);
+  restoreScroll(Page::Settings);
+}
+
+static void onHsv(lv_event_t* e) {
+  int part = (int)(intptr_t)lv_event_get_user_data(e);
+  int value = lv_slider_get_value(lv_event_get_target(e));
+  if (part == 0) pickHsv.h = value;
+  else if (part == 1) pickHsv.s = value;
+  else pickHsv.v = value;
+  if (!pickPreview) return;
+  lv_obj_set_style_bg_color(pickPreview, lv_color_hsv_to_rgb(pickHsv.h, pickHsv.s, pickHsv.v), 0);
+}
+
+static lv_obj_t* hsvSlider(lv_obj_t* parent, const char* name, int value, int max, int part) {
+  addLabel(parent, name, &lv_font_montserrat_14);
+  lv_obj_t* slider = lv_slider_create(parent);
+  lv_obj_set_width(slider, lv_pct(100));
+  lv_slider_set_range(slider, 0, max);
+  lv_slider_set_value(slider, value, LV_ANIM_OFF);
+  lv_obj_add_event_cb(slider, onHsv, LV_EVENT_VALUE_CHANGED, (void*)(intptr_t)part);
+  Palette p = palette();
+  lv_obj_set_style_bg_color(slider, lv_color_hex(p.accent), LV_PART_INDICATOR);
+  lv_obj_set_style_bg_color(slider, lv_color_hex(p.accent), LV_PART_KNOB);
+  return slider;
 }
 
 static void showColor() {
@@ -901,16 +977,20 @@ static void showColor() {
   pageAt = millis();
   const char* name = pickWhich == 0 ? "Background" : pickWhich == 1 ? "Text" : "Buttons";
   uint32_t current = pickWhich == 0 ? settings().colorBg : pickWhich == 1 ? settings().colorFg : settings().colorBtn;
+  pickHsv = lv_color_to_hsv(lv_color_hex(current));
   lv_obj_t* scr = fresh();
-  addHome(scr);
   addLabel(scr, name, &lv_font_montserrat_20);
-  colorWheel = lv_colorwheel_create(scr, true);
-  lv_obj_set_size(colorWheel, 168, 168);
-  lv_obj_set_style_align(colorWheel, LV_ALIGN_CENTER, 0);
-  lv_colorwheel_set_rgb(colorWheel, lv_color_hex(current));
-  addButton(scr, "Hue", 88, false);
-  addButton(scr, "Saturation", 89, false);
-  addButton(scr, "Brightness", 90, false);
+  pickPreview = lv_obj_create(scr);
+  lv_obj_set_width(pickPreview, lv_pct(100));
+  lv_obj_set_height(pickPreview, 28);
+  lv_obj_set_style_radius(pickPreview, 4, 0);
+  lv_obj_set_style_border_width(pickPreview, 0, 0);
+  lv_obj_set_style_bg_opa(pickPreview, LV_OPA_COVER, 0);
+  lv_obj_set_style_bg_color(pickPreview, lv_color_hex(current), 0);
+  lv_obj_clear_flag(pickPreview, LV_OBJ_FLAG_SCROLLABLE);
+  hsvSlider(scr, "Hue", pickHsv.h, 359, 0);
+  hsvSlider(scr, "Saturation", pickHsv.s, 100, 1);
+  hsvSlider(scr, "Brightness", pickHsv.v, 100, 2);
   addButton(scr, "Use this color", 87, true);
 }
 
@@ -920,7 +1000,6 @@ static void showQuiz() {
   const Mcq* item = quizCurrent();
   if (!item) { showResult(); return; }
   lv_obj_t* scr = fresh();
-  addHome(scr);
   char meta[64];
   snprintf(meta, sizeof(meta), "%d / %d    Ch %u %s", quizPos() + 1, quizLength(), item->chapter, item->section);
   addLabel(scr, meta, &lv_font_montserrat_14);
@@ -932,7 +1011,6 @@ static void showFeedback() {
   page = Page::Feedback;
   const Mcq* item = quizCurrent();
   lv_obj_t* scr = fresh();
-  addHome(scr);
   addLabel(scr, feedbackOk ? "Correct" : "Not quite", feedbackOk ? &lv_font_montserrat_28 : &lv_font_montserrat_28);
   if (item) {
     addLabel(scr, item->choice[item->answer], &lv_font_montserrat_16);
@@ -952,7 +1030,6 @@ static void showResult() {
   page = Page::Result;
   pageAt = millis();
   lv_obj_t* scr = fresh();
-  addHome(scr);
   char line[48];
   snprintf(line, sizeof(line), "%d / %d", quizScore(), quizLength());
   addLabel(scr, "Session", &lv_font_montserrat_14);
@@ -965,7 +1042,6 @@ static void showAnalytics() {
   page = Page::Analytics;
   pageAt = millis();
   lv_obj_t* scr = fresh();
-  addHome(scr);
   addLabel(scr, "Missed", &lv_font_montserrat_20);
   char filter[40];
   snprintf(filter, sizeof(filter), analyticsChapter ? "Chapter %d" : "All chapters", analyticsChapter);
@@ -1029,6 +1105,7 @@ void uiBegin() {
 void uiLoop() {
   wifiHandle();
   displayLoop();
+  refreshBar();
   if (page == Page::Boot && millis() - pageAt > 900) routeAfterBoot();
   if (page == Page::Wifi && wifiPortalSaved()) {
     strncpy(settings().ssid, wifiPortalSsid(), sizeof(settings().ssid) - 1);

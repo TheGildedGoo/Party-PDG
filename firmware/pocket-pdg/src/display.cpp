@@ -31,10 +31,18 @@ static int clampi(int v, int lo, int hi) {
 }
 
 static bool readPoint(int* x, int* y) {
+  static uint32_t nextTry = 0;
+  if (millis() < nextTry) return false;
   Wire.beginTransmission(TP_I2C_ADDR);
   Wire.write(0x02);
-  if (Wire.endTransmission(false) != 0) return false;
-  if (Wire.requestFrom((int)TP_I2C_ADDR, 5) < 5) return false;
+  if (Wire.endTransmission(false) != 0) {
+    nextTry = millis() + 300;
+    return false;
+  }
+  if (Wire.requestFrom((int)TP_I2C_ADDR, 5) < 5) {
+    nextTry = millis() + 300;
+    return false;
+  }
   uint8_t points = Wire.read() & 0x0F;
   uint8_t xh = Wire.read();
   uint8_t xl = Wire.read();
@@ -79,6 +87,7 @@ void displayBegin() {
   i2cBegin();
   tft.init();
   tft.setRotation(1);
+  tft.invertDisplay(true);
   tft.fillScreen(TFT_BLACK);
   lv_init();
   lv_disp_draw_buf_init(&drawBuf, buf, nullptr, 240 * 32);
