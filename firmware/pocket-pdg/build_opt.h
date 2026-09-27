@@ -1,4 +1,5 @@
 -DUSER_SETUP_LOADED=1
--DLV_CONF_INCLUDE_SIMPLE
--DBOARD_HAS_PSRAM
+-include /Users/dylanking/Downloads/pocket-pdg/src/lv_conf.h
+-include /Users/dylanking/Downloads/pocket-pdg/src/tft_setup.h
+-DUSE_FSPI_PORT
 -DCORE_DEBUG_LEVEL=1

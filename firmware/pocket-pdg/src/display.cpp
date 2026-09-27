@@ -59,6 +59,7 @@ static bool readPoint(int* x, int* y) {
 
 static void readTouch(lv_indev_drv_t* drv, lv_indev_data_t* data) {
   (void)drv;
+  static bool wasDown = false;
   int x = 0;
   int y = 0;
   if (readPoint(&x, &y)) {
@@ -66,8 +67,11 @@ static void readTouch(lv_indev_drv_t* drv, lv_indev_data_t* data) {
     data->point.x = x;
     data->point.y = y;
     powerWakeScreen();
+    if (!wasDown) hapticClick();
+    wasDown = true;
   } else {
     data->state = LV_INDEV_STATE_REL;
+    wasDown = false;
   }
 }
 
