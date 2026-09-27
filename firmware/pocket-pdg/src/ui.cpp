@@ -39,9 +39,14 @@ static int returnScroll = 0;
 static Page returnPage = Page::Boot;
 static int pickWhich = 0;
 static bool passVisible = false;
+static int wifiView = 0;
+static char pickedSsid[33] = "";
+static lv_obj_t* wifiSsidBox = nullptr;
+static lv_obj_t* wifiPassBox = nullptr;
 
 static void showBoot();
 static void showWifi();
+static lv_obj_t* field(lv_obj_t* parent, const char* text, lv_obj_t* kb);
 static void showLogin();
 static void showHome();
 static void showStudy();
@@ -105,11 +110,15 @@ static void clockText(char* dst, size_t n) {
 
 static void refreshBar() {
   if (!barClock || !barWifi) return;
-  char clock[32];
-  char badge[40];
+  char clock[40];
+  char shown[48];
   clockText(clock, sizeof(clock));
+  if (powerCharging()) snprintf(shown, sizeof(shown), LV_SYMBOL_CHARGE " %s", clock);
+  else if (powerChargeFull()) snprintf(shown, sizeof(shown), "Full %s", clock);
+  else snprintf(shown, sizeof(shown), "%s", clock);
+  char badge[40];
   wifiBadge(badge, sizeof(badge));
-  if (strcmp(lv_label_get_text(barClock), clock) != 0) lv_label_set_text(barClock, clock);
+  if (strcmp(lv_label_get_text(barClock), shown) != 0) lv_label_set_text(barClock, shown);
   if (strcmp(lv_label_get_text(barWifi), badge) != 0) lv_label_set_text(barWifi, badge);
 }
 
@@ -388,10 +397,73 @@ static void onTap(lv_event_t* e) {
     showSettings();
     return;
   }
-  if (act == 43) { showWifi(); return; }
-  if (act == 44) {
-    if (!wifiPortalSaved()) strncpy(statusLine, "Open 192.168.4.1 and tap Save.", sizeof(statusLine) - 1);
+  if (act == 43) {
+    wifiView = 0;
     showWifi();
+    return;
+  }
+  if (act == 244 && wifiPassBox) {
+    passVisible = !passVisible;
+    lv_textarea_set_password_mode(wifiPassBox, passVisible ? false : true);
+    lv_obj_t* lab = lv_obj_get_child(lv_event_get_target(e), 0);
+    if (lab) lv_label_set_text(lab, passVisible ? "Hide password" : "Show password");
+    return;
+  }
+  if (act == 240) {
+    wifiView = 2;
+    showWifi();
+    return;
+  }
+  if (act == 243) {
+    wifiView = 0;
+    showWifi();
+    return;
+  }
+  if (act >= 220 && act < 230) {
+    int index = (int)act - 220;
+    strncpy(pickedSsid, wifiScanSsid(index), sizeof(pickedSsid) - 1);
+    pickedSsid[sizeof(pickedSsid) - 1] = 0;
+    if (!pickedSsid[0]) return;
+    wifiView = 1;
+    showWifi();
+    return;
+  }
+  if (act == 242) {
+    strncpy(statusLine, "Scanning...", sizeof(statusLine) - 1);
+    wifiView = 0;
+    showWifi();
+    lv_refr_now(NULL);
+    wifiScan();
+    if (wifiScanCount() == 0) strncpy(statusLine, "No 2.4 GHz networks found. Type the name.", sizeof(statusLine) - 1);
+    else statusLine[0] = 0;
+    showWifi();
+    return;
+  }
+  if (act == 241) {
+    const char* ssid = wifiView == 2 && wifiSsidBox ? lv_textarea_get_text(wifiSsidBox) : pickedSsid;
+    const char* pass = wifiPassBox ? lv_textarea_get_text(wifiPassBox) : "";
+    if (!ssid || !ssid[0]) {
+      strncpy(statusLine, "Type the network name.", sizeof(statusLine) - 1);
+      showWifi();
+      return;
+    }
+    strncpy(settings().ssid, ssid, sizeof(settings().ssid) - 1);
+    settings().ssid[sizeof(settings().ssid) - 1] = 0;
+    strncpy(settings().pass, pass ? pass : "", sizeof(settings().pass) - 1);
+    settings().pass[sizeof(settings().pass) - 1] = 0;
+    strncpy(statusLine, "Joining...", sizeof(statusLine) - 1);
+    showWifi();
+    lv_refr_now(NULL);
+    settingsSave();
+    if (wifiConnect(settings().ssid, settings().pass, 12000)) {
+      statusLine[0] = 0;
+      wifiView = 0;
+      if (settingsHasToken()) showHome();
+      else showLogin();
+    } else {
+      strncpy(statusLine, "Could not join that network.", sizeof(statusLine) - 1);
+      showWifi();
+    }
     return;
   }
   if (act == 50) { analyticsChapter = 0; showAnalytics(); return; }
@@ -526,13 +598,51 @@ static void showBoot() {
 static void showWifi() {
   page = Page::Wifi;
   pageAt = millis();
-  if (!wifiApUp() && !settings().airplane) wifiStartSetupAp();
+  if (wifiApUp()) wifiStopAp();
+  loginKb = nullptr;
   lv_obj_t* scr = fresh();
-  addLabel(scr, "Wi-Fi", &lv_font_montserrat_28);
-  addLabel(scr, "Join PocketPDG-Setup, then open 192.168.4.1", &lv_font_montserrat_16);
+  lv_obj_set_style_pad_bottom(scr, wifiView == 0 ? 8 : 110, 0);
+  if (wifiView == 0) {
+    wifiSsidBox = nullptr;
+    wifiPassBox = nullptr;
+    passBox = nullptr;
+    addLabel(scr, "Wi-Fi", &lv_font_montserrat_28);
+    addLabel(scr, "2.4 GHz only. Type the name if it is not in the list.", &lv_font_montserrat_14);
+    if (statusLine[0]) addLabel(scr, statusLine, &lv_font_montserrat_14);
+    addButton(scr, "Scan networks", 242, true);
+    addButton(scr, "Type the network name", 240, false);
+    for (int i = 0; i < wifiScanCount(); i++) {
+      char text[48];
+      snprintf(text, sizeof(text), "%s   %d", wifiScanSsid(i), wifiScanRssi(i));
+      addButton(scr, text, 220 + i, false);
+    }
+    if (bankCount() > 0) addButton(scr, "Skip, study offline", 2, false);
+    return;
+  }
+  lv_obj_t* kb = lv_keyboard_create(pageScr);
+  lv_obj_add_flag(kb, LV_OBJ_FLAG_FLOATING);
+  lv_obj_set_size(kb, 320, 100);
+  lv_obj_align(kb, LV_ALIGN_BOTTOM_MID, 0, 0);
+  lv_obj_add_event_cb(kb, onKb, LV_EVENT_ALL, nullptr);
+  if (topBar) lv_obj_move_foreground(topBar);
+  if (wifiView == 2) {
+    addLabel(scr, "Network name", &lv_font_montserrat_16);
+    wifiSsidBox = field(scr, pickedSsid, kb);
+    lv_obj_add_event_cb(wifiSsidBox, onFocus, LV_EVENT_FOCUSED, kb);
+  } else {
+    wifiSsidBox = nullptr;
+    addLabel(scr, pickedSsid, &lv_font_montserrat_16);
+  }
+  addLabel(scr, "Password", &lv_font_montserrat_14);
+  wifiPassBox = field(scr, "", kb);
+  passBox = wifiPassBox;
+  lv_textarea_set_password_mode(wifiPassBox, true);
+  lv_obj_add_event_cb(wifiPassBox, onFocus, LV_EVENT_FOCUSED, kb);
+  lv_keyboard_set_textarea(kb, wifiView == 2 ? wifiSsidBox : wifiPassBox);
   if (statusLine[0]) addLabel(scr, statusLine, &lv_font_montserrat_14);
-  addButton(scr, "I saved the network", 44, true);
-  if (bankCount() > 0) addButton(scr, "Skip, study offline", 2, false);
+  addButton(scr, "Show password", 244, false);
+  addButton(scr, "Join", 241, true);
+  addButton(scr, "Back", 243, false);
 }
 
 static void showLogin() {
@@ -816,9 +926,12 @@ static void showHome() {
   lv_obj_t* scr = fresh();
   addLabel(scr, "Pocket PDG", &lv_font_montserrat_20);
   int bat = powerBatteryPercent();
-  char head[64];
+  char head[72];
+  const char* extra = "";
+  if (powerChargeFull()) extra = "  Full";
+  else if (powerCharging()) extra = "  Charging";
   if (bat < 0) snprintf(head, sizeof(head), "Battery n/a");
-  else snprintf(head, sizeof(head), "Battery %d%%", bat);
+  else snprintf(head, sizeof(head), "Battery %d%%%s", bat, extra);
   addLabel(scr, head, &lv_font_montserrat_14);
   char sync[80];
   snprintf(sync, sizeof(sync), "Sync %s%s", settings().lastSync, settings().syncFailed ? " (failed)" : "");
@@ -1119,18 +1232,6 @@ void uiLoop() {
   displayLoop();
   refreshBar();
   if (page == Page::Boot && millis() - pageAt > 900) routeAfterBoot();
-  if (page == Page::Wifi && wifiPortalSaved()) {
-    strncpy(settings().ssid, wifiPortalSsid(), sizeof(settings().ssid) - 1);
-    strncpy(settings().pass, wifiPortalPass(), sizeof(settings().pass) - 1);
-    settingsSave();
-    wifiNotePortalSaved(false);
-    wifiStopAp();
-    if (wifiConnect(settings().ssid, settings().pass, 12000)) showLogin();
-    else {
-      strncpy(statusLine, "Could not join that network.", sizeof(statusLine) - 1);
-      showWifi();
-    }
-  }
   if (page == Page::Alarm && millis() - pageAt > 45000) powerSleepUntilSchedule();
   bool waiting = page == Page::Home || page == Page::Study || page == Page::Notes || page == Page::Settings
       || page == Page::Result || page == Page::Analytics || page == Page::Wifi || page == Page::Login || page == Page::Pick;

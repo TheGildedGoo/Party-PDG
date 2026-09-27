@@ -7,6 +7,8 @@ void powerSetBrightness(uint8_t percent);
 void powerDimCheck(bool waiting);
 void powerWakeScreen();
 int powerBatteryPercent();
+bool powerCharging();
+bool powerChargeFull();
 void powerSleepUntilSchedule();
 bool powerWokeFromTimer();
 bool powerQuietNow();

@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <esp_sleep.h>
+#include <soc/usb_serial_jtag_struct.h>
 #include <time.h>
 #include "audio.h"
 #include "board_pins.h"
@@ -53,7 +54,9 @@ void powerDimCheck(bool waiting) {
 }
 
 int powerBatteryPercent() {
-  int raw = analogRead(PIN_BAT_ADC);
+  int raw = 0;
+  for (int i = 0; i < 8; i++) raw += analogRead(PIN_BAT_ADC);
+  raw /= 8;
   if (raw < 50) return -1;
   float pinV = (raw / 4095.0f) * 3.3f;
   float bat = pinV * BAT_DIVIDER;
@@ -61,6 +64,68 @@ int powerBatteryPercent() {
   if (pct < 0) pct = 0;
   if (pct > 100) pct = 100;
   return (int)pct;
+}
+
+static float batteryVolts() {
+  int raw = 0;
+  for (int i = 0; i < 8; i++) raw += analogRead(PIN_BAT_ADC);
+  raw /= 8;
+  if (raw < 50) return 0;
+  return (raw / 4095.0f) * 3.3f * BAT_DIVIDER;
+}
+
+static bool usbPower() {
+  static uint16_t lastFrame = 0xFFFF;
+  static uint32_t changedAt = 0;
+  uint16_t frame = USB_SERIAL_JTAG.fram_num.sof_frame_index;
+  if (frame != lastFrame) {
+    lastFrame = frame;
+    changedAt = millis();
+  }
+  return changedAt != 0 && millis() - changedAt < 1500;
+}
+
+static void chargeState(bool* charging, bool* full) {
+  static uint32_t cacheAt = 0;
+  static uint32_t slopeAt = 0;
+  static float prev = 0;
+  static bool rising = false;
+  static bool c = false;
+  static bool f = false;
+  uint32_t now = millis();
+  if (cacheAt != 0 && now - cacheAt < 1000) {
+    *charging = c;
+    *full = f;
+    return;
+  }
+  cacheAt = now;
+  float volts = batteryVolts();
+  if (slopeAt == 0) {
+    prev = volts;
+    slopeAt = now;
+  } else if (now - slopeAt > 15000) {
+    rising = prev > 0 && volts > prev + 0.02f;
+    if (prev > 0 && volts + 0.02f < prev) rising = false;
+    prev = volts;
+    slopeAt = now;
+  }
+  bool usb = volts > 0 && usbPower();
+  f = usb && volts >= 4.18f;
+  c = volts > 3.2f && !f && (usb || rising);
+  *charging = c;
+  *full = f;
+}
+
+bool powerCharging() {
+  bool c = false, f = false;
+  chargeState(&c, &f);
+  return c;
+}
+
+bool powerChargeFull() {
+  bool c = false, f = false;
+  chargeState(&c, &f);
+  return f;
 }
 
 bool powerQuietNow() {

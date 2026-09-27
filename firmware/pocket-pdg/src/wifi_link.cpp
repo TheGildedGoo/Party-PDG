@@ -76,6 +76,64 @@ void wifiHandle() {
 }
 bool wifiConnected() { return WiFi.status() == WL_CONNECTED; }
 int wifiRssi() { return wifiConnected() ? WiFi.RSSI() : 0; }
+
+struct WifiHit {
+  char ssid[33];
+  int rssi;
+};
+
+static WifiHit hits[10];
+static int hitCount = 0;
+
+int wifiScan() {
+  hitCount = 0;
+  if (apUp) wifiStopAp();
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect(false, false);
+  delay(60);
+  int found = WiFi.scanNetworks(false, true);
+  if (found < 0) found = 0;
+  for (int i = 0; i < found; i++) {
+    String name = WiFi.SSID(i);
+    name.trim();
+    if (!name.length() || name.length() > 32) continue;
+    int rssi = WiFi.RSSI(i);
+    int slot = -1;
+    for (int j = 0; j < hitCount; j++) {
+      if (strcmp(hits[j].ssid, name.c_str()) == 0) slot = j;
+    }
+    if (slot >= 0) {
+      if (rssi > hits[slot].rssi) hits[slot].rssi = rssi;
+      continue;
+    }
+    if (hitCount >= 10) continue;
+    strncpy(hits[hitCount].ssid, name.c_str(), sizeof(hits[hitCount].ssid) - 1);
+    hits[hitCount].ssid[sizeof(hits[hitCount].ssid) - 1] = 0;
+    hits[hitCount].rssi = rssi;
+    hitCount++;
+  }
+  for (int i = 0; i < hitCount; i++) {
+    for (int j = i + 1; j < hitCount; j++) {
+      if (hits[j].rssi > hits[i].rssi) {
+        WifiHit tmp = hits[i];
+        hits[i] = hits[j];
+        hits[j] = tmp;
+      }
+    }
+  }
+  WiFi.scanDelete();
+  return hitCount;
+}
+
+int wifiScanCount() { return hitCount; }
+const char* wifiScanSsid(int index) {
+  if (index < 0 || index >= hitCount) return "";
+  return hits[index].ssid;
+}
+int wifiScanRssi(int index) {
+  if (index < 0 || index >= hitCount) return 0;
+  return hits[index].rssi;
+}
 void wifiNotePortalSaved(bool saved) { portalSaved = saved; }
 bool wifiPortalSaved() { return portalSaved; }
 const char* wifiPortalSsid() { return portalSsid.c_str(); }
