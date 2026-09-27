@@ -2,11 +2,11 @@
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include <LittleFS.h>
 #include <algorithm>
 #include <map>
 #include <string>
 #include <vector>
+#include "sd_store.h"
 #include "settings.h"
 #include "srs_algo.h"
 
@@ -42,8 +42,8 @@ static void addDay(const char* day) {
 }
 
 static bool loadFile() {
-  if (!LittleFS.exists("/progress.json")) return false;
-  File file = LittleFS.open("/progress.json", "r");
+  if (!sdExists(SD_PATH_PROGRESS)) return false;
+  File file = sdOpen(SD_PATH_PROGRESS, FILE_READ);
   if (!file) return false;
   JsonDocument doc;
   DeserializationError err = deserializeJson(doc, file);
@@ -188,13 +188,12 @@ static void writeSnapshot(JsonObject root) {
 }
 
 bool srsSave() {
+  if (!sdReady()) return false;
   JsonDocument doc;
   writeSnapshot(doc.to<JsonObject>());
-  File file = LittleFS.open("/progress.json", "w");
-  if (!file) return false;
-  bool ok = serializeJson(doc, file) > 0;
-  file.close();
-  return ok;
+  String body;
+  serializeJson(doc, body);
+  return sdReplace(SD_PATH_PROGRESS, body.c_str(), body.length());
 }
 
 static int64_t endedAt(JsonObject snap) {

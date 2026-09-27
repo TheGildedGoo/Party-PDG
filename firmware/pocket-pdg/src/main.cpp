@@ -4,6 +4,7 @@
 #include "display.h"
 #include "haptic.h"
 #include "power.h"
+#include "sd_store.h"
 #include "settings.h"
 #include "srs.h"
 #include "ui.h"
@@ -12,6 +13,7 @@
 void setup() {
   Serial.begin(115200);
   delay(150);
+  sdBegin();
   settingsBegin();
   if (settings().airplane) wifiForceOff();
   hapticBegin();

@@ -1,12 +1,12 @@
 #include "settings.h"
 
-#include <Preferences.h>
+#include <ArduinoJson.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
 #include "device_api.h"
+#include "sd_store.h"
 
-static Preferences prefs;
 static Settings state;
 
 static void copyText(char* dst, size_t n, const char* src) {
@@ -32,42 +32,7 @@ static void defaults() {
   for (int i = 0; i < 6; i++) state.slotMin[i] = seeds[i];
 }
 
-void settingsBegin() {
-  defaults();
-  prefs.begin("pocket", false);
-  if (prefs.getUChar("ready", 0) != 1) {
-    settingsSave();
-    return;
-  }
-  copyText(state.ssid, sizeof(state.ssid), prefs.getString("ssid", "").c_str());
-  copyText(state.pass, sizeof(state.pass), prefs.getString("pass", "").c_str());
-  copyText(state.email, sizeof(state.email), prefs.getString("email", "").c_str());
-  copyText(state.token, sizeof(state.token), prefs.getString("token", "").c_str());
-  copyText(state.baseUrl, sizeof(state.baseUrl), prefs.getString("base", POCKET_BASE_URL).c_str());
-  state.rank = prefs.getUChar("rank", 5);
-  state.sessionSize = prefs.getUChar("size", 5);
-  state.hapticOn = prefs.getUChar("haptic", 1);
-  state.soundOn = prefs.getUChar("sound", 1);
-  state.airplane = prefs.getUChar("air", 0);
-  state.brightness = prefs.getUChar("bright", 70);
-  state.quietOn = prefs.getUChar("qon", 1);
-  state.quietStart = prefs.getUShort("qs", 22 * 60);
-  state.quietEnd = prefs.getUShort("qe", 6 * 60);
-  state.chapterMask = prefs.getUInt("ch", 0x00FFFFFFu);
-  copyText(state.lastSync, sizeof(state.lastSync), prefs.getString("sync", "never").c_str());
-  state.syncFailed = prefs.getUChar("syncbad", 0);
-  copyText(state.today, sizeof(state.today), prefs.getString("day", "").c_str());
-  state.todayCorrect = prefs.getUShort("dc", 0);
-  state.todayWrong = prefs.getUShort("dw", 0);
-  state.bankGeneratedAt = prefs.getInt("bgen", 0);
-  copyText(state.bankHash, sizeof(state.bankHash), prefs.getString("bhash", "").c_str());
-  for (int i = 0; i < 6; i++) {
-    char key[8];
-    snprintf(key, sizeof(key), "s%d", i);
-    state.slotMin[i] = prefs.getUShort(key, state.slotMin[i]);
-    snprintf(key, sizeof(key), "o%d", i);
-    state.slotOn[i] = prefs.getUChar(key, 0);
-  }
+static void clamp() {
   if (state.rank != 6) state.rank = 5;
   if (state.sessionSize != 3 && state.sessionSize != 5 && state.sessionSize != 10 && state.sessionSize != 15) {
     state.sessionSize = 5;
@@ -76,39 +41,94 @@ void settingsBegin() {
   if (!state.baseUrl[0]) copyText(state.baseUrl, sizeof(state.baseUrl), POCKET_BASE_URL);
 }
 
+static void readDoc(JsonDocument& doc) {
+  copyText(state.ssid, sizeof(state.ssid), doc["ssid"] | "");
+  copyText(state.pass, sizeof(state.pass), doc["pass"] | "");
+  copyText(state.email, sizeof(state.email), doc["email"] | "");
+  copyText(state.token, sizeof(state.token), doc["token"] | "");
+  copyText(state.baseUrl, sizeof(state.baseUrl), doc["baseUrl"] | POCKET_BASE_URL);
+  state.rank = doc["rank"] | 5;
+  state.sessionSize = doc["sessionSize"] | 5;
+  state.hapticOn = doc["hapticOn"] | 1;
+  state.soundOn = doc["soundOn"] | 1;
+  state.airplane = doc["airplane"] | 0;
+  state.brightness = doc["brightness"] | 70;
+  state.quietOn = doc["quietOn"] | 1;
+  state.quietStart = doc["quietStart"] | (22 * 60);
+  state.quietEnd = doc["quietEnd"] | (6 * 60);
+  state.chapterMask = doc["chapterMask"] | 0x00FFFFFFu;
+  copyText(state.lastSync, sizeof(state.lastSync), doc["lastSync"] | "never");
+  state.syncFailed = doc["syncFailed"] | 0;
+  copyText(state.today, sizeof(state.today), doc["today"] | "");
+  state.todayCorrect = doc["todayCorrect"] | 0;
+  state.todayWrong = doc["todayWrong"] | 0;
+  state.bankGeneratedAt = doc["bankGeneratedAt"] | 0;
+  copyText(state.bankHash, sizeof(state.bankHash), doc["bankHash"] | "");
+  JsonArray slots = doc["slots"].as<JsonArray>();
+  int i = 0;
+  for (JsonObject slot : slots) {
+    if (i >= 6) break;
+    state.slotOn[i] = slot["on"] | 0;
+    state.slotMin[i] = slot["min"] | state.slotMin[i];
+    i++;
+  }
+  clamp();
+}
+
+void settingsBegin() {
+  defaults();
+  if (!sdReady()) return;
+  File file = sdOpen(SD_PATH_SETTINGS, FILE_READ);
+  if (!file) {
+    settingsSave();
+    return;
+  }
+  JsonDocument doc;
+  DeserializationError err = deserializeJson(doc, file);
+  file.close();
+  if (err) {
+    settingsSave();
+    return;
+  }
+  readDoc(doc);
+}
+
 Settings& settings() { return state; }
 
 void settingsSave() {
-  prefs.putUChar("ready", 1);
-  prefs.putString("ssid", state.ssid);
-  prefs.putString("pass", state.pass);
-  prefs.putString("email", state.email);
-  prefs.putString("token", state.token);
-  prefs.putString("base", state.baseUrl);
-  prefs.putUChar("rank", state.rank);
-  prefs.putUChar("size", state.sessionSize);
-  prefs.putUChar("haptic", state.hapticOn);
-  prefs.putUChar("sound", state.soundOn);
-  prefs.putUChar("air", state.airplane);
-  prefs.putUChar("bright", state.brightness);
-  prefs.putUChar("qon", state.quietOn);
-  prefs.putUShort("qs", state.quietStart);
-  prefs.putUShort("qe", state.quietEnd);
-  prefs.putUInt("ch", state.chapterMask);
-  prefs.putString("sync", state.lastSync);
-  prefs.putUChar("syncbad", state.syncFailed);
-  prefs.putString("day", state.today);
-  prefs.putUShort("dc", state.todayCorrect);
-  prefs.putUShort("dw", state.todayWrong);
-  prefs.putInt("bgen", state.bankGeneratedAt);
-  prefs.putString("bhash", state.bankHash);
+  if (!sdReady()) return;
+  JsonDocument doc;
+  doc["ssid"] = state.ssid;
+  doc["pass"] = state.pass;
+  doc["email"] = state.email;
+  doc["token"] = state.token;
+  doc["baseUrl"] = state.baseUrl;
+  doc["rank"] = state.rank;
+  doc["sessionSize"] = state.sessionSize;
+  doc["hapticOn"] = state.hapticOn;
+  doc["soundOn"] = state.soundOn;
+  doc["airplane"] = state.airplane;
+  doc["brightness"] = state.brightness;
+  doc["quietOn"] = state.quietOn;
+  doc["quietStart"] = state.quietStart;
+  doc["quietEnd"] = state.quietEnd;
+  doc["chapterMask"] = state.chapterMask;
+  doc["lastSync"] = state.lastSync;
+  doc["syncFailed"] = state.syncFailed;
+  doc["today"] = state.today;
+  doc["todayCorrect"] = state.todayCorrect;
+  doc["todayWrong"] = state.todayWrong;
+  doc["bankGeneratedAt"] = state.bankGeneratedAt;
+  doc["bankHash"] = state.bankHash;
+  JsonArray slots = doc["slots"].to<JsonArray>();
   for (int i = 0; i < 6; i++) {
-    char key[8];
-    snprintf(key, sizeof(key), "s%d", i);
-    prefs.putUShort(key, state.slotMin[i]);
-    snprintf(key, sizeof(key), "o%d", i);
-    prefs.putUChar(key, state.slotOn[i]);
+    JsonObject slot = slots.add<JsonObject>();
+    slot["on"] = state.slotOn[i];
+    slot["min"] = state.slotMin[i];
   }
+  String body;
+  serializeJson(doc, body);
+  sdReplace(SD_PATH_SETTINGS, body.c_str(), body.length());
 }
 
 void settingsNoteToday(bool correct) {

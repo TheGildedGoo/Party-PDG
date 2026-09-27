@@ -30,6 +30,9 @@ Library 1, ERM mode. Not LRA. A boot scan should see touch `0x38` and the motor 
 | Touch SDA, SCL, INT, RST | 16, 15, 17, 18 |
 | Amp enable (active low), I2S MCLK, BCLK, DOUT, LRCK, DIN | 1, 4, 5, 8, 7, 6 |
 | Battery ADC | 9 |
+| microSD CLK, CMD, D0, D1, D2, D3 | 38, 40, 39, 41, 48, 47 |
+
+The microSD slot is the onboard 4-bit SDIO socket. Do not wire it to the LCD SPI pins.
 
 LCDWiki lists I2S data out on GPIO8. If the speaker stays silent, swap DOUT and DIN in `include/board_pins.h` only.
 
@@ -38,10 +41,27 @@ LCDWiki lists I2S data out on GPIO8. If the speaker stays silent, swap DOUT and 
 ```bash
 cd firmware/pocket-pdg
 pio run -t upload
-pio run -t uploadfs
 ```
 
+Flash writes the program into the ESP32-S3's own flash chip. The ROM inside the chip can only start code from that flash. It cannot boot the app from the microSD card. You flash once over USB. After that, the card holds the study data.
+
 `platformio.ini` targets an 8MB flash so a smaller module still boots. For a 16MB N16R8 module, set `board_build.flash_size` and `board_upload.flash_size` to `16MB`. PSRAM mode is `qio_opi`. If the board boot-loops before the logo, try `qio_qspi`.
+
+## SD card
+
+Format the card FAT32. exFAT and NTFS will not mount. Copy the `pocket` folder to the root of the card:
+
+```text
+/pocket/bank.json
+/pocket/progress.json
+/pocket/settings.json
+```
+
+`bank.json` is the question bank. You can drop `web/data/bank.mcq.json` onto the card under that name and skip the first download. `progress.json` and `settings.json` are created on first boot. Wi-Fi password and the device token are plain text in `settings.json`.
+
+A failed sync does not delete the bank or progress. With no card, the brick still boots on eight built-in questions, but nothing is saved until a card is in the slot at power-on.
+
+There is no "boot from SD" mode. A loader would still have to live in flash, read a file, and jump to it. That is a second program in flash, not the chip starting from the card. To change Pocket PDG itself, flash over USB again. To change questions or progress, edit the card.
 
 ## Wi-Fi
 
@@ -59,6 +79,6 @@ Or change the default in `include/device_api.h`.
 
 ## Bank cache
 
-`/bank.json` and `/progress.json` live on LittleFS. The first boot uses eight fixture MCQs from two chapters so the brick works with no network. Sync replaces that file with `GET /api/device/bank` (MCQ only, cite chapter, section, and paragraph). A failed sync does not delete the local bank or progress.
+The bank and progress live on the microSD card, in `/pocket/bank.json` and `/pocket/progress.json`. The first boot uses eight fixture MCQs from two chapters when those files are missing, so the brick works with no network. Sync replaces the bank file with `GET /api/device/bank` (MCQ only, cite chapter, section, and paragraph).
 
 Full-bank parse wants PSRAM. Without it, the fixture bank still runs.

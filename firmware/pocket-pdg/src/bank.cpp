@@ -2,9 +2,9 @@
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
-#include <LittleFS.h>
 #include <string.h>
 #include "fixture_bank.h"
+#include "sd_store.h"
 
 static Mcq* items = nullptr;
 static int count = 0;
@@ -97,7 +97,6 @@ struct PsramAlloc : ArduinoJson::Allocator {
 };
 
 void bankBegin() {
-  if (!LittleFS.begin(true)) Serial.println("LittleFS mount failed");
   if (!bankLoadFile()) loadFixture();
 }
 
@@ -113,9 +112,9 @@ int bankChapters(const ChapterInfo** out) {
   return chapterCount;
 }
 
-bool bankLoadFile() {
-  if (!LittleFS.exists("/bank.json")) return false;
-  File file = LittleFS.open("/bank.json", "r");
+static bool readPath(const char* path) {
+  if (!sdExists(path)) return false;
+  File file = sdOpen(path, FILE_READ);
   if (!file) return false;
   size_t n = file.size();
   if (n < 20 || n > 900000) {
@@ -133,6 +132,14 @@ bool bankLoadFile() {
   bool ok = bankIngest(buf, n);
   heap_caps_free(buf);
   return ok;
+}
+
+bool bankLoadFile() {
+  const char* paths[] = {SD_PATH_BANK, SD_PATH_BANK_ALT, SD_PATH_BANK_ROOT, SD_PATH_BANK_ROOT_MCQ};
+  for (const char* path : paths) {
+    if (readPath(path)) return true;
+  }
+  return false;
 }
 
 bool bankIngest(const char* json, size_t length) {

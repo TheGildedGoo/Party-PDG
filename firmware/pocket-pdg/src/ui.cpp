@@ -10,6 +10,7 @@
 #include "haptic.h"
 #include "power.h"
 #include "quiz.h"
+#include "sd_store.h"
 #include "settings.h"
 #include "srs.h"
 #include "sync.h"
@@ -214,8 +215,9 @@ static void onTap(lv_event_t* e) {
 
 static void onBright(lv_event_t* e) {
   int value = lv_slider_get_value(lv_event_get_target(e));
+  settings().brightness = (uint8_t)value;
   powerSetBrightness((uint8_t)value);
-  settingsSave();
+  if (lv_event_get_code(e) == LV_EVENT_RELEASED) settingsSave();
 }
 
 static void onFocus(lv_event_t* e) {
@@ -234,6 +236,7 @@ static void showBoot() {
   snprintf(line, sizeof(line), "Touch %s   Motor %s\nCodec %s",
            touch ? "0x38" : "missing", motor ? "0x5A" : "missing", codec ? "0x18" : "missing");
   addLabel(scr, line, &lv_font_montserrat_16);
+  addLabel(scr, sdReady() ? sdStatus() : "No SD card", &lv_font_montserrat_16);
   addLabel(scr, "Unofficial study aid.", &lv_font_montserrat_14);
 }
 
@@ -287,9 +290,10 @@ static void showHome() {
   addLabel(scr, "Pocket PDG", &lv_font_montserrat_20);
   int bat = powerBatteryPercent();
   char head[80];
-  if (bat < 0) snprintf(head, sizeof(head), "Battery --   %s", settings().airplane ? "Airplane" : (wifiConnected() ? "Wi-Fi" : "Offline"));
+  if (bat < 0) snprintf(head, sizeof(head), "Battery n/a   %s", settings().airplane ? "Airplane" : (wifiConnected() ? "Wi-Fi" : "Offline"));
   else snprintf(head, sizeof(head), "Battery %d%%   %s", bat, settings().airplane ? "Airplane" : (wifiConnected() ? "Wi-Fi" : "Offline"));
   addLabel(scr, head, &lv_font_montserrat_16);
+  addLabel(scr, sdReady() ? sdStatus() : "Insert a FAT32 microSD", &lv_font_montserrat_14);
   char sync[80];
   snprintf(sync, sizeof(sync), "Sync %s%s", settings().lastSync, settings().syncFailed ? " (failed)" : "");
   addLabel(scr, sync, &lv_font_montserrat_14);
@@ -353,6 +357,7 @@ static void showHome() {
   lv_slider_set_range(slider, 5, 100);
   lv_slider_set_value(slider, settings().brightness, LV_ANIM_OFF);
   lv_obj_add_event_cb(slider, onBright, LV_EVENT_VALUE_CHANGED, nullptr);
+  lv_obj_add_event_cb(slider, onBright, LV_EVENT_RELEASED, nullptr);
   lv_obj_set_style_bg_color(slider, lv_color_hex(0xC4A35A), LV_PART_INDICATOR);
   lv_obj_set_style_bg_color(slider, lv_color_hex(0xC4A35A), LV_PART_KNOB);
 

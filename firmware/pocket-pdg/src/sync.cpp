@@ -2,14 +2,13 @@
 
 #include <Arduino.h>
 #include <HTTPClient.h>
-#include <LittleFS.h>
-#include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
 #include <string.h>
 #include <time.h>
 #include "bank.h"
 #include "device_api.h"
+#include "sd_store.h"
 #include "settings.h"
 #include "srs.h"
 #include "wifi_link.h"
@@ -100,10 +99,7 @@ static bool pullBank() {
     return true;
   }
   if (!head["items"].is<JsonArray>()) return false;
-  File file = LittleFS.open("/bank.json", "w");
-  if (!file) return false;
-  file.print(response);
-  file.close();
+  if (!sdReplace(SD_PATH_BANK, response.c_str(), response.length())) return false;
   if (!bankLoadFile()) return false;
   settings().bankGeneratedAt = generated;
   strncpy(settings().bankHash, hash, sizeof(settings().bankHash) - 1);

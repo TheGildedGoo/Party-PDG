@@ -40,6 +40,14 @@
 #define BAT_EMPTY_V 3.40f
 #define BAT_FULL_V 4.20f
 
+/* Onboard microSD, 4-bit SDIO from the LCDWiki pin table. Not the LCD SPI bus. */
+#define PIN_SD_CLK 38
+#define PIN_SD_CMD 40
+#define PIN_SD_D0 39
+#define PIN_SD_D1 41
+#define PIN_SD_D2 48
+#define PIN_SD_D3 47
+
 /* Portrait mapping. Set to 1 if taps land on the wrong axis. */
 #define TOUCH_SWAP_XY 1
 #define TOUCH_INVERT_X 0
