@@ -116,6 +116,14 @@ test("shipped device bank has no decoy rows and every item is cited", () => {
   assert.equal(e5.items.some((item) => item.cite.chapter === 13 || item.cite.chapter === 16), false);
 });
 
+test("bank function config is listed before the api glob", () => {
+  const vercel = JSON.parse(readFileSync(new URL("../web/vercel.json", import.meta.url), "utf8"));
+  const keys = Object.keys(vercel.functions);
+  assert.equal(keys[0], "api/device/bank.js");
+  assert.equal(vercel.functions["api/device/bank.js"].includeFiles, "data/bank.mcq.json");
+  assert.ok(keys.indexOf("api/**/*.js") > 0);
+});
+
 test("device routes stay bearer-only and progress still merges", () => {
   const action = readFileSync(new URL("../web/api/lib/actions/device.js", import.meta.url), "utf8");
   const progress = readFileSync(new URL("../web/api/lib/actions/progress.js", import.meta.url), "utf8");

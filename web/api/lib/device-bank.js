@@ -10,8 +10,10 @@ function here() {
 }
 
 export function bankPaths() {
+  const traced = fileURLToPath(new URL("../../data/bank.mcq.json", import.meta.url));
   const root = join(here(), "..", "..", "data");
   return [
+    traced,
     join(root, "bank.mcq.json"),
     join(process.cwd(), "data", "bank.mcq.json"),
     join("/var/task", "data", "bank.mcq.json"),

@@ -3,12 +3,12 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".",
   "functions": {
-    "api/**/*.js": {
-      "maxDuration": 30
-    },
     "api/device/bank.js": {
       "maxDuration": 30,
       "includeFiles": "data/bank.mcq.json"
+    },
+    "api/**/*.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
