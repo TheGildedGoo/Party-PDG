@@ -269,7 +269,10 @@ static void showLogin() {
   lv_textarea_set_password_mode(passBox, true);
   lv_obj_set_width(passBox, lv_pct(100));
   lv_obj_t* kb = lv_keyboard_create(scr);
-  lv_obj_set_height(kb, 120);
+  lv_obj_set_size(kb, lv_pct(100), 108);
+  lv_obj_add_flag(kb, LV_OBJ_FLAG_FLOATING);
+  lv_obj_align(kb, LV_ALIGN_BOTTOM_MID, 0, 0);
+  lv_obj_set_style_pad_bottom(scr, 112, 0);
   lv_keyboard_set_textarea(kb, emailBox);
   lv_obj_add_event_cb(emailBox, onFocus, LV_EVENT_FOCUSED, kb);
   lv_obj_add_event_cb(passBox, onFocus, LV_EVENT_FOCUSED, kb);

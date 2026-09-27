@@ -24,6 +24,12 @@ static void flush(lv_disp_drv_t* drv, const lv_area_t* area, lv_color_t* color) 
   lv_disp_flush_ready(drv);
 }
 
+static int clampi(int v, int lo, int hi) {
+  if (v < lo) return lo;
+  if (v > hi) return hi;
+  return v;
+}
+
 static bool readPoint(int* x, int* y) {
   Wire.beginTransmission(TP_I2C_ADDR);
   Wire.write(0x02);
@@ -37,20 +43,17 @@ static bool readPoint(int* x, int* y) {
   if (!points) return false;
   int rx = ((xh & 0x0F) << 8) | xl;
   int ry = ((yh & 0x0F) << 8) | yl;
-  int sx = rx;
-  int sy = ry;
-  if (TOUCH_SWAP_XY) {
-    sx = ry;
-    sy = rx;
+  if (rx > 500 || ry > 500) {
+    rx = rx * 239 / 4095;
+    ry = ry * 319 / 4095;
   }
-  if (TOUCH_INVERT_X) sx = 239 - sx;
-  if (TOUCH_INVERT_Y) sy = 319 - sy;
-  if (sx < 0) sx = 0;
-  if (sy < 0) sy = 0;
-  if (sx > 239) sx = 239;
-  if (sy > 319) sy = 319;
-  *x = sx;
-  *y = sy;
+  rx = clampi(rx, 0, 239);
+  ry = clampi(ry, 0, 319);
+  // Landscape. Rotation 1 on this ILI9341. Glass X is the short side.
+  int sx = ry;
+  int sy = 239 - rx;
+  *x = clampi(sx, 0, 319);
+  *y = clampi(sy, 0, 239);
   return true;
 }
 
@@ -71,13 +74,13 @@ static void readTouch(lv_indev_drv_t* drv, lv_indev_data_t* data) {
 void displayBegin() {
   i2cBegin();
   tft.init();
-  tft.setRotation(0);
+  tft.setRotation(1);
   tft.fillScreen(TFT_BLACK);
   lv_init();
   lv_disp_draw_buf_init(&drawBuf, buf, nullptr, 240 * 32);
   lv_disp_drv_init(&dispDrv);
-  dispDrv.hor_res = 240;
-  dispDrv.ver_res = 320;
+  dispDrv.hor_res = 320;
+  dispDrv.ver_res = 240;
   dispDrv.flush_cb = flush;
   dispDrv.draw_buf = &drawBuf;
   lv_disp_drv_register(&dispDrv);
