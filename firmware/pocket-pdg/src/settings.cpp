@@ -2,6 +2,7 @@
 
 #include <ArduinoJson.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include "device_api.h"
@@ -28,6 +29,13 @@ static void defaults() {
   state.quietEnd = 6 * 60;
   state.chapterMask = 0x00FFFFFFu;
   copyText(state.lastSync, sizeof(state.lastSync), "never");
+  state.theme = 0;
+  state.colorBg = 0x0B0D10;
+  state.colorFg = 0xE6E6E6;
+  state.colorBtn = 0x8AB4F8;
+  state.hapticLevel = 2;
+  state.clock12 = 0;
+  state.tzMinutes = 120;
   const uint16_t seeds[6] = {8 * 60, 12 * 60, 16 * 60, 20 * 60, 7 * 60, 21 * 60};
   for (int i = 0; i < 6; i++) state.slotMin[i] = seeds[i];
 }
@@ -38,6 +46,14 @@ static void clamp() {
     state.sessionSize = 5;
   }
   if (state.brightness < 5) state.brightness = 5;
+  if (state.theme > 3) state.theme = 0;
+  if (state.hapticLevel < 1 || state.hapticLevel > 5) state.hapticLevel = 2;
+  if (state.tzMinutes < -12 * 60 || state.tzMinutes > 14 * 60) state.tzMinutes = 120;
+  if (!state.colorBg && !state.colorFg) {
+    state.colorBg = 0x0B0D10;
+    state.colorFg = 0xE6E6E6;
+    state.colorBtn = 0x8AB4F8;
+  }
   if (!state.baseUrl[0]) copyText(state.baseUrl, sizeof(state.baseUrl), POCKET_BASE_URL);
 }
 
@@ -64,6 +80,13 @@ static void readDoc(JsonDocument& doc) {
   state.todayWrong = doc["todayWrong"] | 0;
   state.bankGeneratedAt = doc["bankGeneratedAt"] | 0;
   copyText(state.bankHash, sizeof(state.bankHash), doc["bankHash"] | "");
+  state.theme = doc["theme"] | 0;
+  state.colorBg = doc["colorBg"] | 0x0B0D10;
+  state.colorFg = doc["colorFg"] | 0xE6E6E6;
+  state.colorBtn = doc["colorBtn"] | 0x8AB4F8;
+  state.hapticLevel = doc["hapticLevel"] | 2;
+  state.clock12 = doc["clock12"] | 0;
+  state.tzMinutes = doc["tzMinutes"] | 120;
   JsonArray slots = doc["slots"].as<JsonArray>();
   int i = 0;
   for (JsonObject slot : slots) {
@@ -77,20 +100,18 @@ static void readDoc(JsonDocument& doc) {
 
 void settingsBegin() {
   defaults();
-  if (!sdReady()) return;
-  File file = sdOpen(SD_PATH_SETTINGS, FILE_READ);
-  if (!file) {
-    settingsSave();
-    return;
+  if (sdReady()) {
+    File file = sdOpen(SD_PATH_SETTINGS, FILE_READ);
+    if (!file) settingsSave();
+    else {
+      JsonDocument doc;
+      DeserializationError err = deserializeJson(doc, file);
+      file.close();
+      if (err) settingsSave();
+      else readDoc(doc);
+    }
   }
-  JsonDocument doc;
-  DeserializationError err = deserializeJson(doc, file);
-  file.close();
-  if (err) {
-    settingsSave();
-    return;
-  }
-  readDoc(doc);
+  settingsApplyTz();
 }
 
 Settings& settings() { return state; }
@@ -120,6 +141,13 @@ void settingsSave() {
   doc["todayWrong"] = state.todayWrong;
   doc["bankGeneratedAt"] = state.bankGeneratedAt;
   doc["bankHash"] = state.bankHash;
+  doc["theme"] = state.theme;
+  doc["colorBg"] = state.colorBg;
+  doc["colorFg"] = state.colorFg;
+  doc["colorBtn"] = state.colorBtn;
+  doc["hapticLevel"] = state.hapticLevel;
+  doc["clock12"] = state.clock12;
+  doc["tzMinutes"] = state.tzMinutes;
   JsonArray slots = doc["slots"].to<JsonArray>();
   for (int i = 0; i < 6; i++) {
     JsonObject slot = slots.add<JsonObject>();
@@ -172,4 +200,15 @@ void settingsClearToken() {
 
 const char* settingsBaseUrl() {
   return state.baseUrl[0] ? state.baseUrl : POCKET_BASE_URL;
+}
+
+void settingsApplyTz() {
+  int mins = state.tzMinutes;
+  int hours = mins / 60;
+  int rem = mins % 60;
+  if (rem < 0) rem = -rem;
+  char tz[24];
+  snprintf(tz, sizeof(tz), "UTC%+d:%02d", -hours, rem);
+  setenv("TZ", tz, 1);
+  tzset();
 }

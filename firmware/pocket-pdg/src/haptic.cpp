@@ -34,14 +34,6 @@ void i2cScan(bool* touch, bool* haptic, bool* codec) {
   if (codec) *codec = probe(CODEC_I2C_ADDR);
 }
 
-static void play(uint8_t effect) {
-  if (!ready || !settings().hapticOn) return;
-  drv.setMode(DRV2605_MODE_INTTRIG);
-  drv.setWaveform(0, effect);
-  drv.setWaveform(1, 0);
-  drv.go();
-}
-
 void hapticBegin() {
   i2cBegin();
   ready = drv.begin(&Wire);
@@ -56,17 +48,29 @@ void hapticBegin() {
 }
 
 bool hapticReady() { return ready; }
-void hapticTick() { play(4); }
-void hapticClick() { play(1); }
-void hapticWrong() { play(47); }
+static void buzz(int ms) {
+  if (!ready || !settings().hapticOn) return;
+  uint8_t level = settings().hapticLevel;
+  if (level < 1) level = 1;
+  if (level > 5) level = 5;
+  const uint8_t amp[6] = {0, 28, 48, 72, 100, 127};
+  drv.setMode(DRV2605_MODE_REALTIME);
+  drv.setRealtimeValue(amp[level]);
+  delay(ms);
+  drv.setRealtimeValue(0);
+}
+
+void hapticTick() { buzz(12); }
+void hapticClick() { buzz(20); }
+void hapticWrong() { buzz(36); }
 
 void hapticAlarm() {
   if (!ready || !settings().hapticOn) return;
-  play(14);
-  delay(220);
-  play(4);
-  delay(140);
-  play(4);
+  buzz(40);
+  delay(180);
+  buzz(24);
+  delay(120);
+  buzz(24);
 }
 
 void hapticStandby() {

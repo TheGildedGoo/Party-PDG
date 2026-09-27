@@ -28,6 +28,13 @@ struct Settings {
   uint16_t todayWrong;
   int32_t bankGeneratedAt;
   char bankHash[68];
+  uint8_t theme;
+  uint32_t colorBg;
+  uint32_t colorFg;
+  uint32_t colorBtn;
+  uint8_t hapticLevel;
+  uint8_t clock12;
+  int16_t tzMinutes;
 };
 
 void settingsBegin();
@@ -40,3 +47,4 @@ bool settingsHasWifi();
 bool settingsHasToken();
 void settingsClearToken();
 const char* settingsBaseUrl();
+void settingsApplyTz();
