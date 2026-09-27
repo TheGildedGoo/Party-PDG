@@ -95,6 +95,9 @@ const STATEMENTS = [
   )`,
   `ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT`,
   `CREATE UNIQUE INDEX IF NOT EXISTS users_username_lower_idx ON users (lower(username)) WHERE deleted_at IS NULL`,
+  `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'web'`,
+  `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS device_name TEXT`,
+  `CREATE INDEX IF NOT EXISTS sessions_kind_idx ON sessions (kind)`,
 ];
 
 export function mapUser(row) {

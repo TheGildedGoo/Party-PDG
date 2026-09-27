@@ -24,6 +24,7 @@ import sys
 
 from bank_schema import normalize_item, validate_item
 from build_bank import write_counts
+from emit_device_bank import emit
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "web", "data")
@@ -139,6 +140,7 @@ def main() -> None:
     save("questions.json", questions)
     save("sjt.json", sjt)
     write_bundle(questions, sjt)
+    emit(questions)
     report = write_counts(questions, sjt)
     print(f"questions replaced {q_rep}, added {q_add}; sjt replaced {s_rep}, added {s_add}")
     print(report)

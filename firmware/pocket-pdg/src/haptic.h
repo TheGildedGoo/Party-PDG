@@ -1,0 +1,13 @@
+#pragma once
+
+#include <stdint.h>
+
+void i2cBegin();
+void i2cScan(bool* touch, bool* haptic, bool* codec);
+void hapticBegin();
+bool hapticReady();
+void hapticTick();
+void hapticClick();
+void hapticWrong();
+void hapticAlarm();
+void hapticStandby();

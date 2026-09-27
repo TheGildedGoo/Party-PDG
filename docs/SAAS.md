@@ -112,10 +112,30 @@ The admin list shows tracked redemptions (email and whether a comp was revoked).
 
 Progress (spaced-repetition box, achievements, focus rollup, last session) is stored on the account. `localStorage` is still written first and treated as a cache. Sync merges by taking the stronger card, the union of study days, and the newer session rollup.
 
+## Pocket PDG device API
+
+The brick cannot use the session cookie. These routes take `Authorization: Bearer <token>` and do not set a cookie. They do not change splash, Stripe, or the party relay.
+
+| Route | Purpose |
+| --- | --- |
+| `POST /api/device/login` | `{ email, password, deviceName? }` returns `{ token, expiresAt, user }`. Rejects unverified, disabled, forced password change, and accounts that cannot play. |
+| `GET /api/device/me` | Same user payload as `/api/auth/me`, including entitlement. |
+| `GET /api/device/bank` | MCQ only. `rank=E5\|E6`, optional `updated_since` unix seconds. Cite keeps chapter, section, and para. |
+| `GET` / `PUT /api/device/progress` | Same merge as Quiet Hours (`mergeSnapshots`). A failed sync must not wipe the brick. |
+
+Device tokens are hashed in `sessions` with `kind = 'device'`. Default life is `DEVICE_SESSION_DAYS` (365). The catalog file is `web/data/bank.mcq.json`, rebuilt by `python3 tools/emit_device_bank.py` and by `build_bank.py`.
+
+```bash
+node --test tools/test_device.mjs
+```
+
+Firmware lives in `firmware/pocket-pdg/`.
+
 ## Local checks
 
 ```bash
 node --test tools/test_saas.mjs
+node --test tools/test_device.mjs
 node tools/test_logic.js
 node tools/test_game.js
 node tools/test_bank.js

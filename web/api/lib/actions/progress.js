@@ -33,23 +33,19 @@ async function allow(request) {
   return user;
 }
 
-export async function getProgress(request) {
-  const user = await allow(request);
+export async function loadProgressSnapshot(userId) {
   const sql = getSql();
   await ready();
-  const rows = await sql`SELECT * FROM progress WHERE user_id = ${user.id} LIMIT 1`;
-  return json({ progress: snapshotFromRow(rows[0]) });
+  const rows = await sql`SELECT * FROM progress WHERE user_id = ${userId} LIMIT 1`;
+  return { progress: snapshotFromRow(rows[0]) };
 }
 
-export async function putProgress(request) {
-  assertSameOrigin(request);
-  const user = await allow(request);
-  const body = await readJson(request);
+export async function saveMergedProgress(userId, body) {
   const text = JSON.stringify(body || {});
   if (text.length > 400000) throw httpError(413, "Progress payload is too large.");
   const sql = getSql();
   await ready();
-  const rows = await sql`SELECT * FROM progress WHERE user_id = ${user.id} LIMIT 1`;
+  const rows = await sql`SELECT * FROM progress WHERE user_id = ${userId} LIMIT 1`;
   const merged = mergeSnapshots(snapshotFromRow(rows[0]), {
     sr: body.sr || {},
     achievements: body.achievements || {},
@@ -62,11 +58,23 @@ export async function putProgress(request) {
   const lastSession = merged.lastSession || null;
   if (rows.length) {
     await sql`UPDATE progress SET sr = ${sr}, achievements = ${achievements}, focus = ${focus},
-      last_session = ${lastSession}, updated_at = NOW() WHERE user_id = ${user.id}`;
+      last_session = ${lastSession}, updated_at = NOW() WHERE user_id = ${userId}`;
   } else {
     await sql`INSERT INTO progress (user_id, sr, achievements, focus, last_session)
-      VALUES (${user.id}, ${sr}, ${achievements}, ${focus}, ${lastSession})`;
+      VALUES (${userId}, ${sr}, ${achievements}, ${focus}, ${lastSession})`;
   }
-  const saved = await sql`SELECT * FROM progress WHERE user_id = ${user.id} LIMIT 1`;
-  return json({ progress: snapshotFromRow(saved[0]) });
+  const saved = await sql`SELECT * FROM progress WHERE user_id = ${userId} LIMIT 1`;
+  return { progress: snapshotFromRow(saved[0]) };
+}
+
+export async function getProgress(request) {
+  const user = await allow(request);
+  return json(await loadProgressSnapshot(user.id));
+}
+
+export async function putProgress(request) {
+  assertSameOrigin(request);
+  const user = await allow(request);
+  const body = await readJson(request);
+  return json(await saveMergedProgress(user.id, body));
 }

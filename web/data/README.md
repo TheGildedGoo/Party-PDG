@@ -32,4 +32,6 @@ python3 tools/build_assets.py
 
 Neither command needs pip. The launcher itself is only Python's standard library.
 
+`python3 tools/emit_device_bank.py` writes `bank.mcq.json` (MCQ only) for `GET /api/device/bank`. `build_bank.py` and `import_questions.py` refresh that file too.
+
 Cite mapping for Host: MCQ and SJT historically used `cite.para`. Decoy Brief uses `cite.paragraph`. Shipped items fill both with the same anchor. `cite.section` is the WAPS letter code (`9D`, `17B`), not a dotted paragraph. Decoy `cite.pageHint` is a string. MCQ and SJT still expose a numeric top-level `pageHint`.

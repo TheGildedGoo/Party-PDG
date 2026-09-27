@@ -521,6 +521,8 @@ def main() -> None:
         handle.write(";\n")
 
     text = write_counts(payload_q, sjts, line_bank)
+    from emit_device_bank import emit
+    emit(questions, CHAPTERS)
     print(text)
     if len(questions) < 250 or len(decoys) < 40 or len(sjts) < 30:
         raise SystemExit("bank below the required floor")

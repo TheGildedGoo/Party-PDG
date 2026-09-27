@@ -96,7 +96,7 @@ Every item is tagged with `kind` (`mcq`, `decoy`, or `sjt`), chapter, section, p
 
 ## Accounts, trial, and billing
 
-The Vercel app (`pdg-play`, root directory `web/`) adds a marketing splash, email login, a 30-day $1/month trial, and an admin panel. The Python launcher still runs Quiet Hours and LAN rooms without that API. Setup for Neon, Resend, Stripe, and the admin bootstrap password is in `docs/SAAS.md`.
+The Vercel app (`pdg-play`, root directory `web/`) adds a marketing splash, email login, a 30-day $1/month trial, and an admin panel. The Python launcher still runs Quiet Hours and LAN rooms without that API. Setup for Neon, Resend, Stripe, and the admin bootstrap password is in `docs/SAAS.md`. Pocket PDG (the ESP32-S3 brick in `firmware/pocket-pdg/`) uses `/api/device/*` with a bearer token instead of the browser cookie.
 
 ```bash
 node --test tools/test_saas.mjs
