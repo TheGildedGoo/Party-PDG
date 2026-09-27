@@ -68,22 +68,12 @@ struct Palette {
   uint32_t accentFg;
 };
 
-static uint32_t inkOn(uint32_t color) {
-  int r = (int)((color >> 16) & 255);
-  int g = (int)((color >> 8) & 255);
-  int b = (int)(color & 255);
-  return (r * 3 + g * 6 + b) > 1400 ? 0x102033u : 0xF4F7FBu;
-}
-
 static Palette palette() {
   Settings& s = settings();
   if (s.theme == 1) return {0xF7F4EE, 0x1C1C1C, 0xC4A35A, 0x1C1C1C, 0x8A5A2B, 0xFFFFFF};
   if (s.theme == 2) return {0x000000, 0xFFFFFF, 0x000000, 0xFFFFFF, 0xFFFF00, 0x000000};
-  if (s.theme == 3) {
-    uint32_t ink = inkOn(s.colorBtn);
-    return {s.colorBg, s.colorFg, s.colorBtn, ink, s.colorBtn, ink};
-  }
-  return {0x000000, 0xE8F1FF, 0x8EB7FF, 0x102033, 0x8EB7FF, 0x102033};
+  if (s.theme == 3) return {s.colorBg, s.colorFg, s.colorBtn, s.colorBtnFg, s.colorBtn, s.colorBtnFg};
+  return {0x000000, 0xFFFFFF, 0x8EB7FF, 0x102033, 0x8EB7FF, 0x102033};
 }
 
 static lv_obj_t* pageScr = nullptr;
@@ -148,18 +138,19 @@ static void buildBar(lv_obj_t* scr) {
   lv_obj_add_event_cb(home, onTap, LV_EVENT_CLICKED, (void*)(intptr_t)7);
   lv_obj_t* icon = lv_label_create(home);
   lv_label_set_text(icon, LV_SYMBOL_HOME);
+  lv_obj_set_style_text_color(icon, lv_color_hex(p.btnFg), 0);
   lv_obj_center(icon);
 
   barClock = lv_label_create(topBar);
   lv_obj_set_style_text_font(barClock, &lv_font_montserrat_14, 0);
-  lv_obj_set_style_text_color(barClock, lv_color_hex(0xE8F1FF), 0);
+  lv_obj_set_style_text_color(barClock, lv_color_hex(p.fg), 0);
   lv_label_set_text(barClock, "--:--");
   lv_obj_align(barClock, LV_ALIGN_LEFT_MID, 30, 0);
 
   barWifi = lv_label_create(topBar);
   lv_obj_set_width(barWifi, 118);
   lv_obj_set_style_text_font(barWifi, &lv_font_montserrat_14, 0);
-  lv_obj_set_style_text_color(barWifi, lv_color_hex(0xE8F1FF), 0);
+  lv_obj_set_style_text_color(barWifi, lv_color_hex(p.fg), 0);
   lv_obj_set_style_text_align(barWifi, LV_TEXT_ALIGN_RIGHT, 0);
   lv_label_set_long_mode(barWifi, LV_LABEL_LONG_DOT);
   lv_label_set_text(barWifi, "");
@@ -197,10 +188,13 @@ static lv_obj_t* fresh() {
 }
 
 static lv_obj_t* addLabel(lv_obj_t* parent, const char* text, const lv_font_t* font) {
+  Palette p = palette();
   lv_obj_t* lab = lv_label_create(parent);
   lv_label_set_text(lab, text);
   lv_label_set_long_mode(lab, LV_LABEL_LONG_WRAP);
   lv_obj_set_width(lab, lv_pct(100));
+  lv_obj_set_style_text_color(lab, lv_color_hex(p.fg), 0);
+  lv_obj_set_style_text_opa(lab, LV_OPA_COVER, 0);
   if (font) lv_obj_set_style_text_font(lab, font, 0);
   return lab;
 }
@@ -237,6 +231,9 @@ static lv_obj_t* addButton(lv_obj_t* parent, const char* text, intptr_t act, boo
   lv_obj_t* lab = lv_label_create(btn);
   lv_label_set_text(lab, text);
   lv_label_set_long_mode(lab, LV_LABEL_LONG_WRAP);
+  lv_obj_set_width(lab, lv_pct(100));
+  lv_obj_set_style_text_color(lab, lv_color_hex(accent ? p.accentFg : p.btnFg), 0);
+  lv_obj_set_style_text_opa(lab, LV_OPA_COVER, 0);
   lv_obj_set_width(lab, lv_pct(100));
   lv_obj_set_style_text_align(lab, LV_TEXT_ALIGN_CENTER, 0);
   return btn;
@@ -338,13 +335,14 @@ static void onTap(lv_event_t* e) {
     showSettings();
     return;
   }
-  if (act >= 84 && act <= 86) {
-    pickWhich = (int)act - 84;
+  if (act == 89 || (act >= 84 && act <= 86)) {
+    pickWhich = act == 89 ? 3 : (int)act - 84;
     if (settings().theme != 3) {
       Palette p = palette();
       settings().colorBg = p.bg;
       settings().colorFg = p.fg;
       settings().colorBtn = p.btn;
+      settings().colorBtnFg = p.btnFg;
     }
     showColor();
     return;
@@ -354,6 +352,7 @@ static void onTap(lv_event_t* e) {
     uint32_t packed = lv_color_to32(c) & 0xFFFFFFu;
     if (pickWhich == 0) settings().colorBg = packed;
     else if (pickWhich == 1) settings().colorFg = packed;
+    else if (pickWhich == 3) settings().colorBtnFg = packed;
     else settings().colorBtn = packed;
     settings().theme = 3;
     settingsSave();
@@ -448,6 +447,14 @@ static void onBright(lv_event_t* e) {
   settings().brightness = (uint8_t)value;
   powerSetBrightness((uint8_t)value);
   if (lv_event_get_code(e) == LV_EVENT_RELEASED) settingsSave();
+}
+
+static void onHapticLevel(lv_event_t* e) {
+  settings().hapticLevel = (uint8_t)lv_slider_get_value(lv_event_get_target(e));
+  if (lv_event_get_code(e) == LV_EVENT_RELEASED) {
+    settingsSave();
+    hapticClick();
+  }
 }
 
 static void showKeyboard(bool open) {
@@ -661,6 +668,7 @@ static lv_obj_t* field(lv_obj_t* parent, const char* text, lv_obj_t* kb) {
   lv_textarea_set_one_line(box, true);
   lv_textarea_set_text(box, text);
   lv_obj_set_width(box, lv_pct(100));
+  lv_obj_set_style_text_color(box, lv_color_hex(palette().fg), 0);
   if (kb) lv_obj_add_event_cb(box, onFieldFocus, LV_EVENT_FOCUSED, kb);
   return box;
 }
@@ -908,6 +916,7 @@ static void showSettings() {
   addButton(scr, "Background color", 84, false);
   addButton(scr, "Text color", 85, false);
   addButton(scr, "Button color", 86, false);
+  addButton(scr, "Button text", 89, false);
   lv_obj_t* kb = lv_keyboard_create(pageScr);
   lv_obj_add_flag(kb, LV_OBJ_FLAG_FLOATING);
   lv_obj_set_size(kb, 320, 100);
@@ -926,11 +935,14 @@ static void showSettings() {
   lv_obj_set_style_bg_color(slider, lv_color_hex(p.accent), LV_PART_KNOB);
   addButton(scr, settings().hapticOn ? "Haptic on" : "Haptic off", 40, false);
   addLabel(scr, "Haptic strength", &lv_font_montserrat_14);
-  for (int i = 1; i <= 5; i++) {
-    char text[24];
-    snprintf(text, sizeof(text), "Strength %d%s", i, settings().hapticLevel == i ? "  (on)" : "");
-    addButton(scr, text, 69 + i, settings().hapticLevel == i);
-  }
+  lv_obj_t* hap = lv_slider_create(scr);
+  lv_obj_set_width(hap, lv_pct(100));
+  lv_slider_set_range(hap, 1, 100);
+  lv_slider_set_value(hap, settings().hapticLevel < 1 ? 45 : settings().hapticLevel, LV_ANIM_OFF);
+  lv_obj_add_event_cb(hap, onHapticLevel, LV_EVENT_VALUE_CHANGED, nullptr);
+  lv_obj_add_event_cb(hap, onHapticLevel, LV_EVENT_RELEASED, nullptr);
+  lv_obj_set_style_bg_color(hap, lv_color_hex(p.accent), LV_PART_INDICATOR);
+  lv_obj_set_style_bg_color(hap, lv_color_hex(p.accent), LV_PART_KNOB);
   addButton(scr, settings().soundOn ? "Sound on" : "Sound off", 41, false);
   addButton(scr, settings().airplane ? "Airplane on" : "Airplane off", 42, false);
   addButton(scr, "Wi-Fi setup", 43, false);
@@ -975,8 +987,8 @@ static lv_obj_t* hsvSlider(lv_obj_t* parent, const char* name, int value, int ma
 static void showColor() {
   page = Page::Pick;
   pageAt = millis();
-  const char* name = pickWhich == 0 ? "Background" : pickWhich == 1 ? "Text" : "Buttons";
-  uint32_t current = pickWhich == 0 ? settings().colorBg : pickWhich == 1 ? settings().colorFg : settings().colorBtn;
+  const char* name = pickWhich == 0 ? "Background" : pickWhich == 1 ? "Page text" : pickWhich == 3 ? "Button text" : "Buttons";
+  uint32_t current = pickWhich == 0 ? settings().colorBg : pickWhich == 1 ? settings().colorFg : pickWhich == 3 ? settings().colorBtnFg : settings().colorBtn;
   pickHsv = lv_color_to_hsv(lv_color_hex(current));
   lv_obj_t* scr = fresh();
   addLabel(scr, name, &lv_font_montserrat_20);

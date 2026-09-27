@@ -30,10 +30,11 @@ static void defaults() {
   state.chapterMask = 0x00FFFFFFu;
   copyText(state.lastSync, sizeof(state.lastSync), "never");
   state.theme = 0;
-  state.colorBg = 0x0B0D10;
-  state.colorFg = 0xE6E6E6;
-  state.colorBtn = 0x8AB4F8;
-  state.hapticLevel = 2;
+  state.colorBg = 0x000000;
+  state.colorFg = 0xFFFFFF;
+  state.colorBtn = 0x8EB7FF;
+  state.colorBtnFg = 0x102033;
+  state.hapticLevel = 45;
   state.clock12 = 0;
   state.tzMinutes = 120;
   const uint16_t seeds[6] = {8 * 60, 12 * 60, 16 * 60, 20 * 60, 7 * 60, 21 * 60};
@@ -47,7 +48,8 @@ static void clamp() {
   }
   if (state.brightness < 5) state.brightness = 5;
   if (state.theme > 3) state.theme = 0;
-  if (state.hapticLevel < 1 || state.hapticLevel > 5) state.hapticLevel = 2;
+  if (state.hapticLevel < 1 || state.hapticLevel > 100) state.hapticLevel = 45;
+  if (!state.colorBtnFg) state.colorBtnFg = 0x102033;
   if (state.tzMinutes < -12 * 60 || state.tzMinutes > 14 * 60) state.tzMinutes = 120;
   if (!state.colorBg && !state.colorFg) {
     state.colorBg = 0x0B0D10;
@@ -81,10 +83,14 @@ static void readDoc(JsonDocument& doc) {
   state.bankGeneratedAt = doc["bankGeneratedAt"] | 0;
   copyText(state.bankHash, sizeof(state.bankHash), doc["bankHash"] | "");
   state.theme = doc["theme"] | 0;
-  state.colorBg = doc["colorBg"] | 0x0B0D10;
-  state.colorFg = doc["colorFg"] | 0xE6E6E6;
-  state.colorBtn = doc["colorBtn"] | 0x8AB4F8;
-  state.hapticLevel = doc["hapticLevel"] | 2;
+  state.colorBg = doc["colorBg"] | 0x000000;
+  state.colorFg = doc["colorFg"] | 0xFFFFFF;
+  state.colorBtn = doc["colorBtn"] | 0x8EB7FF;
+  state.colorBtnFg = doc["colorBtnFg"] | 0x102033;
+  state.hapticLevel = doc["hapticLevel"] | 45;
+  if (doc["colorBtnFg"].isNull() && state.hapticLevel > 0 && state.hapticLevel <= 5) {
+    state.hapticLevel = (uint8_t)(state.hapticLevel * 18);
+  }
   state.clock12 = doc["clock12"] | 0;
   state.tzMinutes = doc["tzMinutes"] | 120;
   JsonArray slots = doc["slots"].as<JsonArray>();
@@ -145,6 +151,7 @@ void settingsSave() {
   doc["colorBg"] = state.colorBg;
   doc["colorFg"] = state.colorFg;
   doc["colorBtn"] = state.colorBtn;
+  doc["colorBtnFg"] = state.colorBtnFg;
   doc["hapticLevel"] = state.hapticLevel;
   doc["clock12"] = state.clock12;
   doc["tzMinutes"] = state.tzMinutes;

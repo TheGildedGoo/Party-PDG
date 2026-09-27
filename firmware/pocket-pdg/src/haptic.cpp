@@ -14,7 +14,7 @@ void i2cBegin() {
   if (started) return;
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
   Wire.setClock(100000);
-  Wire.setTimeOut(20);
+  Wire.setTimeOut(100);
   pinMode(PIN_TP_INT, INPUT);
   pinMode(PIN_TP_RST, OUTPUT);
   digitalWrite(PIN_TP_RST, LOW);
@@ -59,36 +59,41 @@ void hapticBegin() {
   drv.useERM();
   drv.setMode(DRV2605_MODE_INTTRIG);
   Serial.println("DRV2605L ERM library 1");
+  if (settings().hapticOn) {
+    drv.setWaveform(0, 1);
+    drv.setWaveform(1, 0);
+    drv.go();
+  }
 }
 
 bool hapticReady() { return ready; }
-static uint8_t levelEffect(bool hard) {
-  uint8_t level = settings().hapticLevel;
-  if (level < 1) level = 1;
-  if (level > 5) level = 5;
-  const uint8_t soft[6] = {0, 9, 8, 6, 5, 4};
-  const uint8_t firm[6] = {0, 3, 6, 5, 2, 1};
-  return hard ? firm[level] : soft[level];
-}
 
-static void play(uint8_t effect) {
-  if (!ready || !settings().hapticOn || effect == 0) return;
+static void pulse(uint8_t effect) {
+  if (!ready || !settings().hapticOn) return;
+  int level = settings().hapticLevel;
+  if (level < 1) level = 45;
+  if (level > 100) level = 100;
+  uint8_t amp = (uint8_t)(30 + (level * 97) / 100);
   drv.setMode(DRV2605_MODE_INTTRIG);
+  drv.selectLibrary(1);
   drv.setWaveform(0, effect);
   drv.setWaveform(1, 0);
   drv.go();
+  drv.setMode(DRV2605_MODE_REALTIME);
+  drv.setRealtimeValue(amp);
+  delay(30 + level / 5);
+  drv.setRealtimeValue(0);
+  drv.setMode(DRV2605_MODE_INTTRIG);
 }
 
-void hapticTick() { play(levelEffect(false)); }
-void hapticClick() { play(levelEffect(true)); }
-void hapticWrong() { play(settings().hapticLevel >= 4 ? 47 : levelEffect(true)); }
+void hapticTick() { pulse(1); }
+void hapticClick() { pulse(1); }
+void hapticWrong() { pulse(47); }
 
 void hapticAlarm() {
-  play(levelEffect(true));
-  delay(160);
-  play(levelEffect(false));
+  pulse(1);
   delay(120);
-  play(levelEffect(false));
+  pulse(1);
 }
 
 void hapticStandby() {

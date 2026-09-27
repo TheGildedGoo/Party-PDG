@@ -32,6 +32,7 @@ struct Settings {
   uint32_t colorBg;
   uint32_t colorFg;
   uint32_t colorBtn;
+  uint32_t colorBtnFg;
   uint8_t hapticLevel;
   uint8_t clock12;
   int16_t tzMinutes;
