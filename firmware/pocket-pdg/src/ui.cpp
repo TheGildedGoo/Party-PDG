@@ -20,7 +20,7 @@
 #include "sync.h"
 #include "wifi_link.h"
 
-enum class Page { Boot, Wifi, Login, Home, Study, Notes, Settings, Pick, Quiz, Feedback, Result, Analytics, Alarm };
+enum class Page { Boot, Wifi, Login, Home, Study, Notes, Settings, Pick, Quiz, Feedback, Result, Analytics, Alarm, Debug };
 
 static Page page = Page::Boot;
 static uint32_t pageAt = 0;
@@ -53,6 +53,7 @@ static void showStudy();
 static void showNotes();
 static void showSettings();
 static void showResetConfirm();
+static void showDebug();
 static void showColor();
 static bool grabNotes();
 static void saveNotes();
@@ -139,7 +140,7 @@ static void buildBar(lv_obj_t* scr) {
 
   lv_obj_t* home = lv_btn_create(topBar);
   lv_obj_set_pos(home, 0, 0);
-  lv_obj_set_size(home, 26, 26);
+  lv_obj_set_size(home, 44, 26);
   lv_obj_set_style_radius(home, 0, 0);
   lv_obj_set_style_pad_all(home, 0, 0);
   lv_obj_set_style_bg_color(home, lv_color_hex(p.btn), 0);
@@ -155,7 +156,7 @@ static void buildBar(lv_obj_t* scr) {
   lv_obj_set_style_text_font(barClock, &lv_font_montserrat_14, 0);
   lv_obj_set_style_text_color(barClock, lv_color_hex(p.fg), 0);
   lv_label_set_text(barClock, "--:--");
-  lv_obj_align(barClock, LV_ALIGN_LEFT_MID, 30, 0);
+  lv_obj_align(barClock, LV_ALIGN_LEFT_MID, 48, 0);
 
   barWifi = lv_label_create(topBar);
   lv_obj_set_width(barWifi, 118);
@@ -334,6 +335,24 @@ static void onTap(lv_event_t* e) {
   if (act == 13) { showNotes(); return; }
   if (act == 14) { showSettings(); return; }
   if (act == 250) { showResetConfirm(); return; }
+  if (act == 263) {
+    hapticStandby();
+    delay(10);
+    hapticClick();
+    showDebug();
+    return;
+  }
+  if (act == 260) { showDebug(); return; }
+  if (act == 261) {
+    hapticClick();
+    showDebug();
+    return;
+  }
+  if (act == 262) {
+    hapticBuzz(180);
+    showDebug();
+    return;
+  }
   if (act == 15 || act == 16 || act == 17) {
     settings().theme = (uint8_t)(act - 15);
     settingsSave();
@@ -1086,8 +1105,31 @@ static void showSettings() {
   addLabel(scr, settings().clock12 ? "And time, like 7:30 AM" : "And time, like 19:30", &lv_font_montserrat_14);
   timeBox = field(scr, "", kb);
   addButton(scr, "Set clock", 47, false);
+  addButton(scr, "Debug", 260, false);
   addButton(scr, "Factory reset", 250, false);
   restoreScroll(Page::Settings);
+}
+
+static void showDebug() {
+  page = Page::Debug;
+  pageAt = millis();
+  lv_obj_t* scr = fresh();
+  addLabel(scr, "Debug", &lv_font_montserrat_20);
+  char motor[140];
+  hapticDebug(motor, sizeof(motor));
+  addLabel(scr, motor, &lv_font_montserrat_14);
+  char mem[80];
+  snprintf(mem, sizeof(mem), "Heap %u   PSRAM %s %u", (unsigned)ESP.getFreeHeap(),
+           psramFound() ? "on" : "off", (unsigned)ESP.getFreePsram());
+  addLabel(scr, mem, &lv_font_montserrat_14);
+  char net[80];
+  if (wifiConnected()) snprintf(net, sizeof(net), "Wi-Fi %s  %d", settings().ssid, wifiRssi());
+  else snprintf(net, sizeof(net), "Wi-Fi off");
+  addLabel(scr, net, &lv_font_montserrat_14);
+  addButton(scr, "Test click", 261, true);
+  addButton(scr, "Test buzz", 262, false);
+  addButton(scr, "Clear motor fault", 263, false);
+  addButton(scr, "Refresh", 260, false);
 }
 
 static void closeReset(lv_event_t* e) {
@@ -1309,6 +1351,6 @@ void uiLoop() {
   if (page == Page::Boot && millis() - pageAt > 900) routeAfterBoot();
   if (page == Page::Alarm && millis() - pageAt > 45000) powerSleepUntilSchedule();
   bool waiting = page == Page::Home || page == Page::Study || page == Page::Notes || page == Page::Settings
-      || page == Page::Result || page == Page::Analytics || page == Page::Wifi || page == Page::Login || page == Page::Pick;
+      || page == Page::Result || page == Page::Analytics || page == Page::Wifi || page == Page::Login || page == Page::Pick || page == Page::Debug;
   if (page != Page::Alarm) powerDimCheck(waiting);
 }

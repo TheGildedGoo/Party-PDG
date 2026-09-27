@@ -36,11 +36,11 @@ static bool readPoint(int* x, int* y) {
   Wire.beginTransmission(TP_I2C_ADDR);
   Wire.write(0x02);
   if (Wire.endTransmission(false) != 0) {
-    nextTry = millis() + 300;
+    nextTry = millis() + 40;
     return false;
   }
   if (Wire.requestFrom((int)TP_I2C_ADDR, 5) < 5) {
-    nextTry = millis() + 300;
+    nextTry = millis() + 40;
     return false;
   }
   uint8_t points = Wire.read() & 0x0F;
