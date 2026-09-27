@@ -52,6 +52,7 @@ static void showHome();
 static void showStudy();
 static void showNotes();
 static void showSettings();
+static void showResetConfirm();
 static void showColor();
 static bool grabNotes();
 static void saveNotes();
@@ -332,6 +333,7 @@ static void onTap(lv_event_t* e) {
   if (act == 12) { showStudy(); return; }
   if (act == 13) { showNotes(); return; }
   if (act == 14) { showSettings(); return; }
+  if (act == 250) { showResetConfirm(); return; }
   if (act == 15 || act == 16 || act == 17) {
     settings().theme = (uint8_t)(act - 15);
     settingsSave();
@@ -945,14 +947,15 @@ static void showHome() {
   if (bat < 0) snprintf(head, sizeof(head), "Battery n/a");
   else snprintf(head, sizeof(head), "Battery %d%%%s", bat, extra);
   addLabel(scr, head, &lv_font_montserrat_14);
-  char sync[80];
-  snprintf(sync, sizeof(sync), "Sync %s%s", settings().lastSync, settings().syncFailed ? " (failed)" : "");
+  char sync[140];
+  if (settings().syncFailed && statusLine[0]) snprintf(sync, sizeof(sync), "%s", statusLine);
+  else snprintf(sync, sizeof(sync), "Sync %s%s", settings().lastSync, settings().syncFailed ? " (failed)" : "");
   addLabel(scr, sync, &lv_font_montserrat_14);
   char study[80];
   snprintf(study, sizeof(study), "Streak %d    Today %u/%u", srsStreak(), settings().todayCorrect,
            (unsigned)(settings().todayCorrect + settings().todayWrong));
   addLabel(scr, study, &lv_font_montserrat_16);
-  if (statusLine[0]) addLabel(scr, statusLine, &lv_font_montserrat_14);
+  if (statusLine[0] && !settings().syncFailed) addLabel(scr, statusLine, &lv_font_montserrat_14);
   if (bankUsingFixture()) addLabel(scr, "Fixture bank. Sync to load AFH 1.", &lv_font_montserrat_14);
   addButton(scr, "Start now", 3, true);
   addButton(scr, "Study configuration", 12, false);
@@ -1083,7 +1086,67 @@ static void showSettings() {
   addLabel(scr, settings().clock12 ? "And time, like 7:30 AM" : "And time, like 19:30", &lv_font_montserrat_14);
   timeBox = field(scr, "", kb);
   addButton(scr, "Set clock", 47, false);
+  addButton(scr, "Factory reset", 250, false);
   restoreScroll(Page::Settings);
+}
+
+static void closeReset(lv_event_t* e) {
+  lv_obj_t* dim = (lv_obj_t*)lv_event_get_user_data(e);
+  if (dim) lv_obj_del(dim);
+}
+
+static void doReset(lv_event_t* e) {
+  (void)e;
+  settingsFactoryReset();
+}
+
+static void showResetConfirm() {
+  Palette p = palette();
+  lv_obj_t* host = pageScr ? pageScr : lv_scr_act();
+  lv_obj_t* dim = lv_obj_create(host);
+  lv_obj_set_size(dim, 320, 240);
+  lv_obj_set_pos(dim, 0, 0);
+  lv_obj_add_flag(dim, LV_OBJ_FLAG_FLOATING);
+  lv_obj_clear_flag(dim, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_set_style_radius(dim, 0, 0);
+  lv_obj_set_style_border_width(dim, 0, 0);
+  lv_obj_set_style_bg_color(dim, lv_color_hex(0x000000), 0);
+  lv_obj_set_style_bg_opa(dim, LV_OPA_70, 0);
+  lv_obj_move_foreground(dim);
+
+  lv_obj_t* card = lv_obj_create(dim);
+  lv_obj_set_width(card, 280);
+  lv_obj_set_height(card, LV_SIZE_CONTENT);
+  lv_obj_align(card, LV_ALIGN_CENTER, 0, 0);
+  lv_obj_set_style_bg_color(card, lv_color_hex(p.bg), 0);
+  lv_obj_set_style_bg_opa(card, LV_OPA_COVER, 0);
+  lv_obj_set_style_border_width(card, 0, 0);
+  lv_obj_set_style_pad_all(card, 10, 0);
+  lv_obj_set_style_pad_row(card, 8, 0);
+  lv_obj_set_flex_flow(card, LV_FLEX_FLOW_COLUMN);
+  lv_obj_clear_flag(card, LV_OBJ_FLAG_SCROLLABLE);
+  addLabel(card, "Erase this device?", &lv_font_montserrat_16);
+  addLabel(card, "This deletes the login, saved Wi-Fi, and study progress on the SD card.", &lv_font_montserrat_14);
+
+  lv_obj_t* cancel = lv_btn_create(card);
+  lv_obj_set_width(cancel, lv_pct(100));
+  lv_obj_set_style_bg_color(cancel, lv_color_hex(p.btn), 0);
+  lv_obj_set_style_bg_opa(cancel, LV_OPA_COVER, 0);
+  lv_obj_add_event_cb(cancel, closeReset, LV_EVENT_CLICKED, dim);
+  lv_obj_t* cancelLab = lv_label_create(cancel);
+  lv_label_set_text(cancelLab, "Cancel");
+  lv_obj_set_style_text_color(cancelLab, lv_color_hex(p.btnFg), 0);
+  lv_obj_center(cancelLab);
+
+  lv_obj_t* erase = lv_btn_create(card);
+  lv_obj_set_width(erase, lv_pct(100));
+  lv_obj_set_style_bg_color(erase, lv_color_hex(0x8E2F2F), 0);
+  lv_obj_set_style_bg_opa(erase, LV_OPA_COVER, 0);
+  lv_obj_add_event_cb(erase, doReset, LV_EVENT_CLICKED, nullptr);
+  lv_obj_t* eraseLab = lv_label_create(erase);
+  lv_label_set_text(eraseLab, "Erase everything");
+  lv_obj_set_style_text_color(eraseLab, lv_color_hex(0xFFFFFF), 0);
+  lv_obj_center(eraseLab);
 }
 
 static void onHsv(lv_event_t* e) {

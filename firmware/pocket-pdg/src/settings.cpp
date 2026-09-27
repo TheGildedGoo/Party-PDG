@@ -7,6 +7,8 @@
 #include <time.h>
 #include "device_api.h"
 #include "sd_store.h"
+#include "wifi_link.h"
+#include <SD_MMC.h>
 
 static Settings state;
 
@@ -164,6 +166,18 @@ void settingsSave() {
   String body;
   serializeJson(doc, body);
   sdReplace(SD_PATH_SETTINGS, body.c_str(), body.length());
+}
+
+void settingsFactoryReset() {
+  wifiForceOff();
+  defaults();
+  settingsSave();
+  if (sdReady()) {
+    SD_MMC.remove(SD_PATH_PROGRESS);
+    SD_MMC.remove("/pocket/progress.json.tmp");
+  }
+  delay(80);
+  ESP.restart();
 }
 
 void settingsNoteToday(bool correct) {

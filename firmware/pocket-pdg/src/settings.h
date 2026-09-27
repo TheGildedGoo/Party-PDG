@@ -41,6 +41,7 @@ struct Settings {
 void settingsBegin();
 Settings& settings();
 void settingsSave();
+void settingsFactoryReset();
 void settingsNoteToday(bool correct);
 int settingsStreakDays(const char* today);
 PocketSchedule settingsSchedule();

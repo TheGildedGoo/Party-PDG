@@ -42,6 +42,7 @@ static bool beginHttp(HTTPClient& http, WiFiClientSecure& client, const String& 
   http.setTimeout(25000);
   http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
   if (!http.begin(client, url)) return false;
+  http.addHeader("Accept-Encoding", "identity");
   if (settingsHasToken()) {
     http.addHeader("Authorization", String("Bearer ") + settings().token);
   }
@@ -77,6 +78,17 @@ bool syncLogin(const char* email, const char* password) {
   strncpy(settings().token, token, sizeof(settings().token) - 1);
   settingsSave();
   return true;
+}
+
+static void noteHttp(const char* what, int code, const String& body) {
+  JsonDocument doc;
+  const char* err = "";
+  if (body.length() > 0 && !deserializeJson(doc, body)) err = doc["error"] | "";
+  char msg[140];
+  if (err && err[0]) snprintf(msg, sizeof(msg), "%s", err);
+  else if (code < 0) snprintf(msg, sizeof(msg), "%s. The server did not answer.", what);
+  else snprintf(msg, sizeof(msg), "%s (HTTP %d).", what, code);
+  note(msg);
 }
 
 static bool streamBody(HTTPClient& http, const char* path) {
@@ -122,7 +134,8 @@ static bool streamBody(HTTPClient& http, const char* path) {
 static bool pullBank() {
   char query[180];
   snprintf(query, sizeof(query), "%s%s?rank=E%d&updated_since=%ld",
-           settingsBaseUrl(), DEVICE_API_BANK, settings().rank == 6 ? 6 : 5, (long)settings().bankGeneratedAt);
+           settingsBaseUrl(), DEVICE_API_BANK, settings().rank == 6 ? 6 : 5,
+           bankUsingFixture() ? 0L : (long)settings().bankGeneratedAt);
   WiFiClientSecure client;
   HTTPClient http;
   if (!beginHttp(http, client, query)) {
@@ -134,15 +147,15 @@ static bool pullBank() {
   Serial.printf("bank HTTP %d, %d bytes, heap %u, psram %u\n", code, size, ESP.getFreeHeap(), ESP.getFreePsram());
   if (code == 401) {
     settingsClearToken();
+    String body = http.getString();
     http.end();
-    note("Login expired. Log in again.");
+    noteHttp("Login expired", code, body);
     return false;
   }
   if (code != 200) {
+    String body = http.getString();
     http.end();
-    char msg[80];
-    snprintf(msg, sizeof(msg), "Bank request failed (HTTP %d).", code);
-    note(msg);
+    noteHttp("Bank request failed", code, body);
     return false;
   }
   if (size > 0 && size < 4096) {
@@ -211,7 +224,7 @@ static bool pullPushProgress() {
   Serial.printf("progress GET %d\n", code);
   if (code == 401) {
     settingsClearToken();
-    note("Login expired. Log in again.");
+    noteHttp("Login expired", code, response);
     return false;
   }
   if (code == 200) {
@@ -239,9 +252,7 @@ static bool pullPushProgress() {
   put.end();
   Serial.printf("progress PUT %d\n", putCode);
   if (putCode != 200) {
-    char msg[80];
-    snprintf(msg, sizeof(msg), "Progress upload failed (HTTP %d).", putCode);
-    note(msg);
+    noteHttp("Progress upload failed", putCode, merged);
     return false;
   }
   if (!srsMergeRemote(merged.c_str(), merged.length())) srsSave();
@@ -258,8 +269,9 @@ SyncResult syncNow() {
     note("Could not join Wi-Fi.");
     return SyncResult::Offline;
   }
-  configTime(0, 0, "pool.ntp.org");
+  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
   settingsApplyTz();
+  for (int i = 0; i < 20 && time(nullptr) < 1700000000; i++) delay(100);
   if (!settingsHasToken()) {
     stamp(true);
     note("Log in to sync.");
