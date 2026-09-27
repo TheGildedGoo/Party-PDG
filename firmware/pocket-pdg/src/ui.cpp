@@ -249,6 +249,13 @@ static lv_obj_t* addButton(lv_obj_t* parent, const char* text, intptr_t act, boo
 }
 
 static void routeAfterBoot() {
+  if (!settings().airplane && settingsHasWifi() && !wifiConnected()) {
+    if (pageBody) addLabel(pageBody, "Joining saved network...", &lv_font_montserrat_14);
+    lv_refr_now(NULL);
+    if (!wifiConnect(settings().ssid, settings().pass, 15000)) {
+      strncpy(statusLine, "Saved Wi-Fi did not connect.", sizeof(statusLine) - 1);
+    }
+  }
   if (settings().airplane || settingsHasWifi()) {
     if (!settingsHasToken() && !settings().airplane && settingsHasWifi()) showLogin();
     else showHome();
@@ -592,6 +599,11 @@ static void showBoot() {
            touch ? "ready" : "waking", motor ? "ready" : "missing", codec ? "ready" : "off");
   addLabel(scr, line, &lv_font_montserrat_16);
   addLabel(scr, sdReady() ? sdStatus() : "No SD card", &lv_font_montserrat_16);
+  if (settingsHasWifi()) {
+    char saved[64];
+    snprintf(saved, sizeof(saved), "Saved Wi-Fi: %s", settings().ssid);
+    addLabel(scr, saved, &lv_font_montserrat_14);
+  }
   addLabel(scr, "Unofficial study aid.", &lv_font_montserrat_14);
 }
 
